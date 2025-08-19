@@ -1,10 +1,25 @@
 {
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js"
+  },
   "dependencies": {
+    "@adobe/pdfservices-node-sdk": "^4.1.0",
+    "@ilovepdf/ilovepdf-nodejs": "^0.3.1",
+    "adm-zip": "^0.5.16",
+    "chalk": "^5.6.0",
+    "cloudconvert": "^3.0.0",
+    "cloudmersive-convert-api-client": "^2.8.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "express-fileupload": "^1.5.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.17.1",
     "multer": "^2.0.1",
-    "pdf-lib": "^1.17.1"
+    "node-cron": "^4.2.1",
+    "pdf-lib": "^1.17.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
