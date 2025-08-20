@@ -1,14 +1,44 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const MongoStore = require("connect-mongo");
+const session = require("express-session");
+const multer = require("multer");
+const passport = require("passport");
+
+app.use(
+  session({
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+    }),
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "PRODUCTION",
+      sameSite: "none",
+      httpOnly: false,
+    },
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
+const allowedOrigins = [
+  process.env.CLIENT_URL_DEV,
+  process.env.CLIENT_URL_PRO,
+].filter(Boolean);
 
 dotenv.config();
-
+mongoose
+  .connect(process.env.MONGODB_URI, {})
+  .then(() => console.log("Db connection Successfully"))
+  .catch((err) => console.log(err));
 app.use(express.json());
-const forms = require("multer");
-const { default: axios } = require("axios");
+
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     return res.status(400).json({
@@ -20,8 +50,6 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-require("dotenv").config();
-const multer = require("multer");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -30,15 +58,6 @@ app.use(
     credentials: true,
   })
 );
-mongoose
-  .connect(process.env.MONGODB_URI, {})
-  .then(() => console.log("Db connection Successfully"))
-  .catch((err) => console.log(err));
-
-const allowedOrigins = [
-  process.env.CLIENT_URL_DEV,
-  process.env.CLIENT_URL_PRO,
-].filter(Boolean);
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -51,6 +70,8 @@ app.use(
     credentials: true,
   })
 );
+
+
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     return res.status(400).json({
@@ -63,17 +84,14 @@ app.use((err, req, res, next) => {
 });
 
 const toolsRoutes = require("./src/routes/tools_routes");
-const { upload } = require("./src/utils/multer");
-app.use("/api/v1/tools/", toolsRoutes);
-app.post("/upload_files", upload.array("files"), uploadFiles);
+const authRoutes = require("./src/routes/auth_routes");
+const userRoutes = require("./src/routes/user_routes.js");
+const baseRoute = "/api/v1/";
 app.use("/uploads", express.static("uploads"));
 app.use("/downloads", express.static("downloads"));
-
-function uploadFiles(req, res) {
-  console.log(req.body);
-  console.log(req.files);
-  res.json({ message: "Successfully uploaded files" });
-}
+app.use(baseRoute + "auth", authRoutes);
+app.use(baseRoute + "user", userRoutes);
+app.use(baseRoute + "tools", toolsRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
