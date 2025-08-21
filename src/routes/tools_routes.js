@@ -9,11 +9,11 @@ router.post("/test", (req, res) => {
 
 router.post("/convert-pdf-to-word", upload.single("pdfFile"), pdftoword);
 
-router.post(
-  "/convert-word-to-pdf",
-  upload.single("wordFile"),
-  tools_controller.WordToPdf
-);
+// router.post(
+//   "/convert-word-to-pdf",
+//   upload.single("wordFile"),
+//   tools_controller.WordToPdf
+// );
 router.get("/download/:fileId", tools_controller.download);
 
 module.exports = router;

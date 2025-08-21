@@ -148,9 +148,9 @@
 const fileModel = require("../models/file_model");
 const fs = require("fs");
 const path = require("path");
-const cloudmersiveConvertApiClient = require("cloudmersive-convert-api-client");
+// const cloudmersiveConvertApiClient = require("cloudmersive-convert-api-client");
 const cron = require("node-cron");
-const ILovePDFApi = require("@ilovepdf/ilovepdf-nodejs");
+// const ILovePDFApi = require("@ilovepdf/ilovepdf-nodejs");
 const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Types;
 // import CloudConvert from "cloudconvert";
@@ -159,11 +159,11 @@ const { ObjectId } = mongoose.Types;
 // const iloveapi = require('iloveapi'); // Adjust the import based on your setup
 
 // API setup
-const defaultClient = cloudmersiveConvertApiClient.ApiClient.instance;
-let Apikey = defaultClient.authentications["Apikey"];
-Apikey.apiKey = "ae24f9b8-2577-4ffd-a90d-17559cacec49";
+// const defaultClient = cloudmersiveConvertApiClient.ApiClient.instance;
+// let Apikey = defaultClient.authentications["Apikey"];
+// Apikey.apiKey = "ae24f9b8-2577-4ffd-a90d-17559cacec49";
 
-const apiInstance = new cloudmersiveConvertApiClient.ConvertDocumentApi();
+// const apiInstance = new cloudmersiveConvertApiClient.ConvertDocumentApi();
 
 // Define the downloads directory path relative to the current file
 const downloadDir = path.join("downloads");
@@ -173,131 +173,131 @@ if (!fs.existsSync(downloadDir)) {
   fs.mkdirSync(downloadDir);
 }
 
-exports.PdfToWord = async (req, res) => {
-  // Check if a file was uploaded
-  if (!req.file) {
-    return res.status(400).json({ message: "No file was uploaded." });
-  }
+// exports.PdfToWord = async (req, res) => {
+//   // Check if a file was uploaded
+//   if (!req.file) {
+//     return res.status(400).json({ message: "No file was uploaded." });
+//   }
 
-  try {
-    const inputFilePath = req.file.path;
-    // Read the file content from the temporary path
-    const inputFile = fs.readFileSync(inputFilePath);
+//   try {
+//     const inputFilePath = req.file.path;
+//     // Read the file content from the temporary path
+//     const inputFile = fs.readFileSync(inputFilePath);
 
-    // Define the callback function for the API call
-    var callback = function (error, data, response) {
-      // First, delete the temporary uploaded file to clean up
-      fs.unlink(inputFilePath, (err) => {
-        if (err) console.error("Error deleting temp file:", err);
-      });
+//     // Define the callback function for the API call
+//     var callback = function (error, data, response) {
+//       // First, delete the temporary uploaded file to clean up
+//       fs.unlink(inputFilePath, (err) => {
+//         if (err) console.error("Error deleting temp file:", err);
+//       });
 
-      if (error) {
-        console.error("Cloudmersive API Error:", error.response.text);
-        return res.status(400).json({
-          message: "Error converting file.",
-          error: error.response.text,
-        });
-      }
+//       if (error) {
+//         console.error("Cloudmersive API Error:", error.response.text);
+//         return res.status(400).json({
+//           message: "Error converting file.",
+//           error: error.response.text,
+//         });
+//       }
 
-      // Generate a unique filename and path for the converted file
-      const outputFilename = `converted-${Date.now()}.docx`;
-      const outputPath = path.join(downloadDir, outputFilename);
+//       // Generate a unique filename and path for the converted file
+//       const outputFilename = `converted-${Date.now()}.docx`;
+//       const outputPath = path.join(downloadDir, outputFilename);
 
-      // Write the converted file data to disk
-      fs.writeFile(outputPath, data, async (err) => {
-        if (err) {
-          console.error("Error saving converted file:", err);
-          return res
-            .status(500)
-            .json({ message: "Error saving converted file." });
-        }
-        const downloadUrl = `${req.protocol}://${req.get(
-          "host"
-        )}/downloads/${outputFilename}`;
+//       // Write the converted file data to disk
+//       fs.writeFile(outputPath, data, async (err) => {
+//         if (err) {
+//           console.error("Error saving converted file:", err);
+//           return res
+//             .status(500)
+//             .json({ message: "Error saving converted file." });
+//         }
+//         const downloadUrl = `${req.protocol}://${req.get(
+//           "host"
+//         )}/downloads/${outputFilename}`;
 
-        const newFile = await fileModel.create({
-          fileType: "pdf",
-          fileUrl: downloadUrl,
-        });
-        console.log(newFile, "newFile_id");
-        res.status(200).json({
-          message: "File converted successfully. Use the link to download.",
-          fileId: newFile._id,
-        });
-      });
-    };
+//         const newFile = await fileModel.create({
+//           fileType: "pdf",
+//           fileUrl: downloadUrl,
+//         });
+//         console.log(newFile, "newFile_id");
+//         res.status(200).json({
+//           message: "File converted successfully. Use the link to download.",
+//           fileId: newFile._id,
+//         });
+//       });
+//     };
 
-    // Call the Cloudmersive API
-    apiInstance.convertDocumentPdfToDocx(inputFile, callback);
-  } catch (error) {
-    // Catches errors with file read (e.g., file not found)
-    console.error("Internal Server Error:", error);
-    res.status(400).json({ message: "An internal server error occurred." });
-  }
-};
+//     // Call the Cloudmersive API
+//     apiInstance.convertDocumentPdfToDocx(inputFile, callback);
+//   } catch (error) {
+//     // Catches errors with file read (e.g., file not found)
+//     console.error("Internal Server Error:", error);
+//     res.status(400).json({ message: "An internal server error occurred." });
+//   }
+// };
 
-exports.WordToPdf = async (req, res) => {
-  // Check if a file was uploaded
-  if (!req.file) {
-    return res.status(400).json({ message: "No file was uploaded." });
-  }
+// exports.WordToPdf = async (req, res) => {
+//   // Check if a file was uploaded
+//   if (!req.file) {
+//     return res.status(400).json({ message: "No file was uploaded." });
+//   }
 
-  try {
-    const inputFilePath = req.file.path;
-    // Read the file content from the temporary path
-    const inputFile = fs.readFileSync(inputFilePath);
+//   try {
+//     const inputFilePath = req.file.path;
+//     // Read the file content from the temporary path
+//     const inputFile = fs.readFileSync(inputFilePath);
 
-    // Define the callback function for the API call
-    var callback = function (error, data, response) {
-      // First, delete the temporary uploaded file to clean up
-      fs.unlink(inputFilePath, (err) => {
-        if (err) console.error("Error deleting temp file:", err);
-      });
+//     // Define the callback function for the API call
+//     var callback = function (error, data, response) {
+//       // First, delete the temporary uploaded file to clean up
+//       fs.unlink(inputFilePath, (err) => {
+//         if (err) console.error("Error deleting temp file:", err);
+//       });
 
-      if (error) {
-        console.error("Cloudmersive API Error:", error.response.text);
-        return res.status(400).json({
-          message: "Error converting file.",
-          error: error.response.text,
-        });
-      }
+//       if (error) {
+//         console.error("Cloudmersive API Error:", error.response.text);
+//         return res.status(400).json({
+//           message: "Error converting file.",
+//           error: error.response.text,
+//         });
+//       }
 
-      // Generate a unique filename and path for the converted file
-      const outputFilename = `converted-${Date.now()}.pdf`;
-      const outputPath = path.join(downloadDir, outputFilename);
+//       // Generate a unique filename and path for the converted file
+//       const outputFilename = `converted-${Date.now()}.pdf`;
+//       const outputPath = path.join(downloadDir, outputFilename);
 
-      // Write the converted file data to disk
-      fs.writeFile(outputPath, data, async (err) => {
-        if (err) {
-          console.error("Error saving converted file:", err);
-          return res
-            .status(500)
-            .json({ message: "Error saving converted file." });
-        }
-        const downloadUrl = `${req.protocol}://${req.get(
-          "host"
-        )}/downloads/${outputFilename}`;
+//       // Write the converted file data to disk
+//       fs.writeFile(outputPath, data, async (err) => {
+//         if (err) {
+//           console.error("Error saving converted file:", err);
+//           return res
+//             .status(500)
+//             .json({ message: "Error saving converted file." });
+//         }
+//         const downloadUrl = `${req.protocol}://${req.get(
+//           "host"
+//         )}/downloads/${outputFilename}`;
 
-        const newFile = await fileModel.create({
-          fileType: "docx",
-          fileUrl: downloadUrl,
-        });
-        console.log(newFile, "newFile_id");
-        res.status(200).json({
-          message: "File converted successfully. Use the link to download.",
-          fileId: newFile._id,
-        });
-      });
-    };
+//         const newFile = await fileModel.create({
+//           fileType: "docx",
+//           fileUrl: downloadUrl,
+//         });
+//         console.log(newFile, "newFile_id");
+//         res.status(200).json({
+//           message: "File converted successfully. Use the link to download.",
+//           fileId: newFile._id,
+//         });
+//       });
+//     };
 
-    // Call the Cloudmersive API
-    apiInstance.convertDocumentDocxToPdf(inputFile, callback);
-  } catch (error) {
-    // Catches errors with file read (e.g., file not found)
-    console.error("Internal Server Error:", error);
-    res.status(400).json({ message: "An internal server error occurred." });
-  }
-};
+//     // Call the Cloudmersive API
+//     apiInstance.convertDocumentDocxToPdf(inputFile, callback);
+//   } catch (error) {
+//     // Catches errors with file read (e.g., file not found)
+//     console.error("Internal Server Error:", error);
+//     res.status(400).json({ message: "An internal server error occurred." });
+//   }
+// };
 
 exports.download = async (req, res) => {
   try {

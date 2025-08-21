@@ -5,11 +5,8 @@
   },
   "dependencies": {
     "@adobe/pdfservices-node-sdk": "^4.1.0",
-    "@ilovepdf/ilovepdf-nodejs": "^0.3.1",
     "adm-zip": "^0.5.16",
     "chalk": "^5.6.0",
-    "cloudconvert": "^3.0.0",
-    "cloudmersive-convert-api-client": "^2.8.0",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
