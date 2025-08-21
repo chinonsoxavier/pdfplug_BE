@@ -1,7 +1,7 @@
 const router = require("express").Router();
-const { pdftoword } = require("../src/controller/pdf_to_word");
-const tools_controller = require("../src/controller/tools_controller");
-const { upload } = require("../src/utils/multer");
+const { pdftoword } = require("../controller/pdf_to_word");
+const tools_controller = require("../controller/tools_controller");
+const { upload } = require("../utils/multer");
 
 router.post("/test", (req, res) => {
   res.send("Tools API is working!");

@@ -83,9 +83,9 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-const toolsRoutes = require("./routes/tools_routes");
-const authRoutes = require("./routes/auth_routes");
-const userRoutes = require("./routes/user_routes.js");
+const toolsRoutes = require("./src/routes/tools_routes.js");
+const authRoutes = require("./src/routes/auth_routes.js");
+const userRoutes = require("./src/routes/user_routes.js");
 const baseRoute = "/api/v1/";
 app.use("/uploads", express.static("uploads"));
 app.use("/downloads", express.static("downloads"));

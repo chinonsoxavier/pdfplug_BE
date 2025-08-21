@@ -145,7 +145,7 @@
 //   }
 // };
 
-const fileModel = require("../src/models/file_model");
+const fileModel = require("../models/file_model");
 const fs = require("fs");
 const path = require("path");
 // const cloudmersiveConvertApiClient = require("cloudmersive-convert-api-client");
