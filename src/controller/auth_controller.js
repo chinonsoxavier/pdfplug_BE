@@ -5,6 +5,7 @@ const CryptoJS = require("crypto-js");
 const ejs = require("ejs");
 const path = require("path");
 const { GenerateToken, decodedToken } = require("../services/jwt_services.js");
+const UserModel = require(".././models/user_model.js");
 
 // Register
 exports.createUser = async (req, res) => {
@@ -28,7 +29,7 @@ exports.createUser = async (req, res) => {
     };
     console.log(newUser);
     const activationToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL}/auth/verify/${activationToken}`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify/${activationToken}`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
       path.join("src", "services", "emails", "verifyEmail.ejs"),
@@ -69,18 +70,19 @@ exports.verifyUser = async (req, res) => {
 };
 
 // refresh verification token
-exports.RefreshVerificationToken = async (req, res) => {
-  const token = req.params.token;
-  const users = req.user;
-  console.log(token, users);
-  const user = decodedToken(token);
+exports.ResendPasswordResetToken = async (req, res) => {
+  const email = req.body.email;
+
+  const user = await userServices.getUserByEmail(email);
+  console.log( user);
+  // const user = decodedToken(token);
   console.log(user, "refresh token user");
   try {
     const newVerificationToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL}/auth/verify/${newVerificationToken}`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify/${newVerificationToken}`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
-      path.join("services", "emails", "verifyEmail.ejs"),
+      path.join("src", "services", "emails", "verifyEmail.ejs"),
       data
     );
     await sendMail({
@@ -149,7 +151,7 @@ exports.LoginUser = async (req, res) => {
     //  res.redirect("http://localhost:5173");
 
     return res.status(200).json("Logged in Successfully");
-    // console.log(req.session);
+    // console.log(req.session)==;
   } catch (error) {
     console.log(error);
     console.error("Failed to login user");
@@ -181,10 +183,10 @@ exports.ResetPasswordToken = async (req, res) => {
     }
     console.log(user);
     const resetPasswordToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL}/auth/reset-password/${resetPasswordToken}`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/reset-password/${resetPasswordToken}`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
-      path.join("services", "emails", "resetPasswordEmail.ejs"),
+      path.join("src", "services", "emails", "resetPasswordEmail.ejs"),
       data
     );
     await sendMail({
@@ -203,6 +205,7 @@ exports.ResetPasswordToken = async (req, res) => {
 exports.GetUser = async (req, res) => {
   try {
     const userId = req?.session?.passport?.user;
+    console.log(userId, "userId");
     const User = await userServices.getUserById(userId);
     if (userId) {
       if (User == null) {
@@ -213,7 +216,7 @@ exports.GetUser = async (req, res) => {
         status: 200,
       });
     }
-    res.send("User not Logged in");
+    res.status(404).json("User not Logged in");
   } catch (error) {
     res.status(401).json(error);
     console.log(error);

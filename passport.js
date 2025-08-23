@@ -2,7 +2,7 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("./src/models/user_model"); // Adjust the path to your User model
-const userServices = require("./services/userServices");
+const userServices = require("./src/services/user_services");
 const CryptoJS = require("crypto-js");
 const GitHubStrategy = require("passport-github2").Strategy;
 passport.serializeUser((user, done) => {
@@ -13,8 +13,13 @@ passport.deserializeUser(async (_id, done) => {
   console.log(_id, "id");
   try {
     const user = await User.findById(_id);
-    const { password, ...info } = user._doc;
+    if (!user) {
+      return done(null, false, {
+        message: "User not found",
+      });
+    }
 
+    const { password, ...info } = user._doc; // No need for optional chaining here
     done(null, info);
   } catch (err) {
     done(err, null);
@@ -31,27 +36,28 @@ passport.use(
       const userEmail = email;
       const userPassword = password;
       const existingUser = await userServices.getUserByEmail(userEmail);
-      const bytes = existingUser
-        ? CryptoJS.AES?.decrypt(
-            existingUser?.password,
-            process.env.CRYPTO_JS_SECRET_KEY
-          )
-        : null;
-      const originalPassword = bytes?.toString(CryptoJS.enc.Utf8);
+      if (existingUser == null || existingUser.$isEmpty() || !existingUser.password) {
+        console.log(userEmail);
+        console.log(userPassword);
+        console.log(existingUser, "existing");
+        return done(null, false, {
+          message: "User not found or uses social login",
+        });
+      }
+      if (!existingUser.isVerified)
+        return done(null, false, {
+          message:
+            "Email not verified,Check your email for verification link!",
+        });
+
       try {
-        if (existingUser == null || existingUser.$isEmpty()) {
-          console.log(userEmail);
-          console.log(userPassword);
-          console.log(existingUser, "existing");
-          return done(null, false, {
-            message: "User not found,Check email and try again",
-          });
-        }
-        if (!existingUser.isVerified)
-          return done(null, false, {
-            message:
-              "Email not verified,Check your email for verification link!",
-          });
+        const bytes = existingUser
+          ? CryptoJS.AES?.decrypt(
+              existingUser?.password,
+              process.env.CRYPTO_JS_SECRET_KEY
+            )
+          : null;
+        const originalPassword = bytes?.toString(CryptoJS.enc.Utf8);
         if (originalPassword !== userPassword) {
           return done(null, false, { message: "Incorrect password" });
         }
@@ -72,12 +78,12 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL:
         process.env.GOOGLE_CALLBACK_URL ||
-        "http://localhost:4000/api/v1/auth/google/callback",
+        "http://localhost:5000/api/v1/auth/google/callback",
       scope: ["profile", "email"],
     },
     (accessToken, refreshToken, profile, done) => {
       // console.log(accessToken, refreshToken);
-      console.log(profile);
+      console.log(profile, "progile");
       User.findOne({ email: profile.emails[0].value })
         .then((existingUser) => {
           if (existingUser) {
@@ -124,6 +130,10 @@ passport.use(
       User.findOne({ profileId: profile.id })
         .then((existingUser) => {
           if (existingUser) {
+            User.findOneAndUpdate(
+              { _id: existingUser?._id },
+              { isVerified: true }
+            );
             if (existingUser.password) {
               return done(null, existingUser);
             } else {

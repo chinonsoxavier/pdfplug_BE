@@ -8,6 +8,7 @@ const MongoStore = require("connect-mongo");
 const session = require("express-session");
 const multer = require("multer");
 const passport = require("passport");
+require("./passport");
 
 app.use(
   session({
@@ -70,7 +71,6 @@ app.use(
     credentials: true,
   })
 );
-
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
