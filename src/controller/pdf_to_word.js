@@ -15,7 +15,6 @@ const path = require("path");
 const fileModel = require("../models/file_model");
 const downloadDir = path.join("downloads");
 
-// Ensure the directory exists. This is crucial.
 if (!fs.existsSync(downloadDir)) {
   fs.mkdirSync(downloadDir);
 }
