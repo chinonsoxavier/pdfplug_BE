@@ -32,7 +32,7 @@ exports.pdftoword = async (req, res) => {
 
     const pdfServices = new PDFServices({
       credentials,
-      timeout:60000
+      timeout: 80000,
     });
 
     // Creates an asset(s) from source file(s) and upload
