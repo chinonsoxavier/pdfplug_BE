@@ -55,10 +55,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: process.env.CLIENT_URL_DEV,
+    origin: process.env.CLIENT_URL_PRO,
     credentials: true,
   })
 );
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", process.env.CLIENT_URL_PRO);
+  // Replace with your frontend's origin
+  res.header("Access-Control-Allow-Credentials", true);
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept" // Corrected line
+  );
+  next();
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
