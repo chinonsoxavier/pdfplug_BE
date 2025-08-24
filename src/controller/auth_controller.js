@@ -29,7 +29,7 @@ exports.createUser = async (req, res) => {
     };
     console.log(newUser);
     const activationToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify/${activationToken}`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify-email/${activationToken}`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
       path.join("src", "services", "emails", "verifyEmail.ejs"),
@@ -43,7 +43,7 @@ exports.createUser = async (req, res) => {
     });
     await newUser.save();
     return res.status(200).json({
-      Message: `Account created Successfully! Please check your email ${newUser.email} to verify your account`,
+      Message: `Account created Successfully! Please check your email ${newUser.email} to verify-email your account`,
     });
   } catch (error) {
     if (error.code == "EENVELOPE") {
@@ -56,9 +56,10 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// verify user email
+// verify-email user email
 exports.verifyUser = async (req, res) => {
-  const user = req.user;
+  const token = req.params.token;
+  const user = decodedToken(token);
   try {
     authServices.verifyUser(user);
     res.status(200).json({ message: "Email verified successfully" });
@@ -68,6 +69,7 @@ exports.verifyUser = async (req, res) => {
     res.status(400).json("user verification failed");
   }
 };
+
 
 // refresh verification token
 exports.ResendPasswordResetToken = async (req, res) => {
@@ -79,7 +81,36 @@ exports.ResendPasswordResetToken = async (req, res) => {
   console.log(user, "refresh token user");
   try {
     const newVerificationToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify/${newVerificationToken}`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify-email/${newVerificationToken}`;
+    const data = { email: user.email, activationUrl: activationUrl };
+    const htmlContent = await ejs.renderFile(
+      path.join("src", "services", "emails", "resetPasswordEmail.ejs"),
+      data
+    );
+    await sendMail({
+      from: `Pdfplug ${process.env.SMPT_USER}`,
+      to: user.email,
+      subject: "Reset your Pdfplug password",
+      html: htmlContent,
+    });
+    res
+      .status(200)
+      .json("A new token has been sent to your email!");
+  } catch (error) {
+    console.log(error);
+    res.status(400).json(error);
+  }
+};
+
+exports.ResendVerificationToken = async (req, res) => {
+  const email = req.body.email;
+  const user = await userServices.getUserByEmail(email);
+  console.log(user);
+  // const user = decodedToken(token);
+  console.log(user, "refresh token user");
+  try {
+    const newVerificationToken = await GenerateToken(user, "access");
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify-email/${newVerificationToken}`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
       path.join("src", "services", "emails", "verifyEmail.ejs"),
@@ -99,6 +130,7 @@ exports.ResendPasswordResetToken = async (req, res) => {
     res.status(400).json(error);
   }
 };
+
 
 // login user
 exports.LoginUser = async (req, res) => {
@@ -120,7 +152,7 @@ exports.LoginUser = async (req, res) => {
   const originalPassword = bytes?.toString(CryptoJS.enc.Utf8);
   try {
     if (!existingUser.isVerified) {
-      return res.status(400).json("please verify your email");
+      return res.status(400).json("please verify-email your email");
     }
     if (existingUser == null || existingUser.$isEmpty()) {
       return res

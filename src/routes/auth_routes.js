@@ -4,7 +4,22 @@ const authController = require("../controller/auth_controller");
 const router = require("express").Router();
 const jwt = require("jsonwebtoken");
 router.post("/register", authController.createUser);
-router.put("/verify/:token", verify, authController.verifyUser);
+router.put("/verify/:token",  (req, res, next) => {
+    jwt.verify(req.params.token, process.env.JWTSECRET_KEY, (err, user) => {
+      console.log("veryfying");
+      if (err?.name == "TokenExpiredError") {
+        return res.status(400).json("Token is expired");
+      }
+      if (err) {
+        return res.status(400).json("Token is not valid");
+      }
+      next();
+    })
+  }, authController.verifyUser);
+  router.post(
+  "/resend-verification-token",
+  authController.ResendVerificationToken
+);
 router.post(
   "/resend-password-reset-token",
   authController.ResendPasswordResetToken
