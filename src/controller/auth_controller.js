@@ -20,7 +20,21 @@ exports.createUser = async (req, res) => {
       ).toString(),
     };
     if (existingUser !== null || existingUser) {
-      return res.status(400).json("user with this email already exists");
+      if (!existingUser.isVerified) {
+        return res
+          .status(400)
+          .json({
+            message:
+              "email not verified!check your email for verification token",
+            status: "email not verified",
+          });
+      }
+      return res
+        .status(400)
+        .json({
+          message: "user with this email already exists",
+          status: "email already exists",
+        });
     }
     const newUser = await authServices.createUser(userPayload);
     const user = {
@@ -70,13 +84,12 @@ exports.verifyUser = async (req, res) => {
   }
 };
 
-
 // refresh verification token
 exports.ResendPasswordResetToken = async (req, res) => {
   const email = req.body.email;
 
   const user = await userServices.getUserByEmail(email);
-  console.log( user);
+  console.log(user);
   // const user = decodedToken(token);
   console.log(user, "refresh token user");
   try {
@@ -93,9 +106,7 @@ exports.ResendPasswordResetToken = async (req, res) => {
       subject: "Reset your Pdfplug password",
       html: htmlContent,
     });
-    res
-      .status(200)
-      .json("A new token has been sent to your email!");
+    res.status(200).json("A new token has been sent to your email!");
   } catch (error) {
     console.log(error);
     res.status(400).json(error);
@@ -130,7 +141,6 @@ exports.ResendVerificationToken = async (req, res) => {
     res.status(400).json(error);
   }
 };
-
 
 // login user
 exports.LoginUser = async (req, res) => {
