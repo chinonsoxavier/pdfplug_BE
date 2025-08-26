@@ -74,6 +74,7 @@ exports.createUser = async (req, res) => {
 exports.verifyUser = async (req, res) => {
   const token = req.params.token;
   const user = decodedToken(token);
+  console.log("veryfying")
   try {
     authServices.verifyUser(user);
     res.status(200).json({ message: "Email verified successfully" });

@@ -83,6 +83,8 @@ exports.pdftoword = async (req, res) => {
     const newFile = await fileModel.create({
       fileType: "pdf",
       fileUrl: downloadUrl,
+      userId: req.user._id,
+      action: "converted Pdf to word",
     });
     res.status(200).json({
       message: "File converted successfully. Use the link to download.",

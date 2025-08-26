@@ -20,6 +20,11 @@ router.put("/verify/:token",  (req, res, next) => {
   "/resend-verification-token",
   authController.ResendVerificationToken
 );
+
+router.put("/test", (req, res) => {
+  res.send("sucess");
+  console.log('works');
+})
 router.post(
   "/resend-password-reset-token",
   authController.ResendPasswordResetToken
