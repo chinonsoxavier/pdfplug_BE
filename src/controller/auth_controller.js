@@ -43,7 +43,7 @@ exports.createUser = async (req, res) => {
     };
     console.log(newUser);
     const activationToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL_DEV}/verify-email/${activationToken}?link`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify-email/${activationToken}?link`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
       path.join("src", "services", "emails", "verifyEmail.ejs"),
@@ -94,7 +94,7 @@ exports.ResendPasswordResetToken = async (req, res) => {
   console.log(user, "refresh token user");
   try {
     const newVerificationToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL_DEV}/verify-email/${newVerificationToken}`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify-email/${newVerificationToken}`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
       path.join("src", "services", "emails", "resetPasswordEmail.ejs"),
@@ -121,7 +121,7 @@ exports.ResendVerificationToken = async (req, res) => {
   console.log(user, "refresh token user");
   try {
     const newVerificationToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL_DEV}/verify-email/${newVerificationToken}?link`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/verify-email/${newVerificationToken}?link`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
       path.join("src", "services", "emails", "verifyEmail.ejs"),
@@ -225,7 +225,7 @@ exports.ResetPasswordToken = async (req, res) => {
     }
     console.log(user);
     const resetPasswordToken = await GenerateToken(user, "access");
-    const activationUrl = `${process.env.CLIENT_URL_DEV}/reset-password/${resetPasswordToken}`;
+    const activationUrl = `${process.env.CLIENT_URL_PRO}/reset-password/${resetPasswordToken}`;
     const data = { email: user.email, activationUrl: activationUrl };
     const htmlContent = await ejs.renderFile(
       path.join("src", "services", "emails", "resetPasswordEmail.ejs"),
