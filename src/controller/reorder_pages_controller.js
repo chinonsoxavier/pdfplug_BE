@@ -8,7 +8,7 @@ const fileModel = require("../models/file_model");
 
 // Ensure directories exist
 const downloadDir = path.join("downloads");
-const uploadDir = path.join("uploads");
+const uploadDir = path.join("Uploads");
 try {
   if (!fs.existsSync(downloadDir))
     fs.mkdirSync(downloadDir, { recursive: true });
@@ -34,24 +34,6 @@ function createOutputFilePath(ext) {
     "-" +
     ("0" + date.getSeconds()).slice(-2);
   return `${downloadDir}/${dateString}.${ext}`;
-}
-
-// Function to create output PDF file path for JpgToPdf (from your original code)
-function createOutputPdfPath(marginSetting, orientationSetting) {
-  const date = new Date();
-  const dateString =
-    date.getFullYear() +
-    "-" +
-    ("0" + (date.getMonth() + 1)).slice(-2) +
-    "-" +
-    ("0" + date.getDate()).slice(-2) +
-    "T" +
-    ("0" + date.getHours()).slice(-2) +
-    "-" +
-    ("0" + date.getMinutes()).slice(-2) +
-    "-" +
-    ("0" + date.getSeconds()).slice(-2);
-  return `${downloadDir}/${dateString}_${orientationSetting}_${marginSetting}_margin.pdf`;
 }
 
 // Reusable function for client ID determination (from your original code)
@@ -116,19 +98,18 @@ const safeUnlink = async (
   console.error(`Failed to delete ${filePath} after ${retries} attempts`);
 };
 
-
-exports.RotatePdf = async (req, res) => {
-  // Get rotation angle from request body or query (default: 90 degrees)
-  const angle = parseInt(req.body.angle || req.query.angle || 90, 10);
-  const validAngles = [0, 90, 180, 270];
-  if (!validAngles.includes(angle)) {
-    return res
-      .status(400)
-      .json({
-        error: `Invalid rotation angle: ${angle}. Must be one of ${validAngles.join(
-          ", "
-        )}.`,
-      });
+// Reorder PDF pages endpoint
+exports.reorderPdf = async (req, res) => {
+  // Get page order from request body or query (e.g., [3, 4, 1, 2])
+  let pageOrder = req.body.pageOrder || req.query.pageOrder;
+  if (typeof pageOrder === "string") {
+    try {
+      pageOrder = JSON.parse(pageOrder);
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ error: `Invalid pageOrder format: ${err.message}` });
+    }
   }
 
   getClientIdAndProcess(req, res, async (clientId) => {
@@ -141,7 +122,7 @@ exports.RotatePdf = async (req, res) => {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
-      console.log("File received for rotation:", {
+      console.log("File received for reorder:", {
         path: inputFilePath,
         originalname: originalFileName,
         mimetype: req.file.mimetype,
@@ -153,7 +134,6 @@ exports.RotatePdf = async (req, res) => {
           .json({ error: `Input file not found at ${inputFilePath}` });
       }
 
-      // Validate file type
       if (req.file.mimetype !== "application/pdf") {
         await safeUnlink(inputFilePath, originalFileName);
         return res
@@ -164,20 +144,52 @@ exports.RotatePdf = async (req, res) => {
       // Load the input PDF
       const pdfBytes = fs.readFileSync(inputFilePath);
       const pdfDoc = await PDFDocument.load(pdfBytes);
+      const pageCount = pdfDoc.getPageCount();
 
-      // Rotate all pages
-      const pages = pdfDoc.getPages();
-      for (const page of pages) {
-        // Get current rotation and add the new angle (pdf-lib uses additive rotation)
-        const currentRotation = page.getRotation().angle;
-        page.setRotation(degrees((currentRotation + angle) % 360));
+      // Validate pageOrder
+      if (!Array.isArray(pageOrder) || pageOrder.length === 0) {
+        await safeUnlink(inputFilePath, originalFileName);
+        return res
+          .status(400)
+          .json({ error: "pageOrder must be a non-empty array" });
+      }
+      const pageSet = new Set(pageOrder);
+      if (pageSet.size !== pageOrder.length) {
+        await safeUnlink(inputFilePath, originalFileName);
+        return res
+          .status(400)
+          .json({ error: "pageOrder contains duplicate page numbers" });
+      }
+      if (pageOrder.length !== pageCount) {
+        await safeUnlink(inputFilePath, originalFileName);
+        return res
+          .status(400)
+          .json({ error: `pageOrder must include exactly ${pageCount} pages` });
+      }
+      for (const pageNum of pageOrder) {
+        if (!Number.isInteger(pageNum) || pageNum < 1 || pageNum > pageCount) {
+          await safeUnlink(inputFilePath, originalFileName);
+          return res
+            .status(400)
+            .json({
+              error: `Invalid page number ${pageNum}: must be an integer between 1 and ${pageCount}`,
+            });
+        }
       }
 
-      // Save rotated PDF
+      // Create a new PDF document
+      const newPdfDoc = await PDFDocument.create();
+
+      // Copy pages in the specified order (convert 1-based to 0-based indexing)
+      const pageIndices = pageOrder.map((num) => num - 1);
+      const copiedPages = await newPdfDoc.copyPages(pdfDoc, pageIndices);
+      copiedPages.forEach((page) => newPdfDoc.addPage(page));
+
+      // Save reordered PDF
       outputFilePath = createOutputFilePath("pdf");
-      const rotatedPdfBytes = await pdfDoc.save();
-      fs.writeFileSync(outputFilePath, rotatedPdfBytes);
-      console.log(`Saving rotated PDF at ${outputFilePath}`);
+      const reorderedPdfBytes = await newPdfDoc.save();
+      fs.writeFileSync(outputFilePath, reorderedPdfBytes);
+      console.log(`Saving reordered PDF at ${outputFilePath}`);
 
       const downloadUrl = `${req.protocol}s://${req.get(
         "host"
@@ -188,13 +200,13 @@ exports.RotatePdf = async (req, res) => {
         fileType: "pdf",
         fileUrl: downloadUrl,
         userId: clientId,
-        action: `rotated PDF pages by ${angle} degrees`,
-        fileName: `rotated_${originalFileName}`,
-        icon: "rotate_pdf",
+        action: `reordered PDF pages to [${pageOrder.join(", ")}]`,
+        fileName: `reordered_${originalFileName}`,
+        icon: "reorder_pdf",
         metadata: {
           originalFileName,
           conversionDate: new Date(),
-          rotationAngle: angle,
+          pageOrder,
         },
       });
 
@@ -202,16 +214,18 @@ exports.RotatePdf = async (req, res) => {
       await safeUnlink(inputFilePath, originalFileName);
 
       res.status(200).json({
-        message: `PDF pages rotated successfully by ${angle} degrees. Use the link to download.`,
+        message: `PDF pages reordered successfully to [${pageOrder.join(
+          ", "
+        )}]. Use the link to download.`,
         file: {
           fileId: pdfFileRecord._id,
           downloadUrl: downloadUrl,
-          fileName: `rotated_${originalFileName}`,
+          fileName: `reordered_${originalFileName}`,
         },
       });
     } catch (err) {
-      console.error("Error rotating PDF:", err);
-      res.status(400).json({ error: `Failed to rotate PDF: ${err.message}` });
+      console.error("Error reordering PDF:", err);
+      res.status(400).json({ error: `Failed to reorder PDF: ${err.message}` });
     } finally {
       await safeUnlink(inputFilePath, originalFileName);
     }

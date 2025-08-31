@@ -6,8 +6,9 @@ const { upload } = require("../utils/multer");
 const { mergePdfs } = require("../controller/merge_pdf_controller");
 const { compressPdf } = require("../controller/compress_pdf");
 const { PdfToJpg } = require("../controller/pdf_to_jpg_controller");
-const {JpgToPdf} = require("../controller/jpg_to_pdf");
+const { JpgToPdf } = require("../controller/jpg_to_pdf");
 const { RotatePdf } = require("../controller/rotate_pages_controller");
+const { reorderPdf } = require("../controller/reorder_pages_controller");
 
 router.get("/recent-activities", tools_controller.recentActivities);
 
@@ -45,6 +46,12 @@ router.post(
   "/rotate-pdf-pages",
   upload.single("pdfFiles"), // Use upload.array() for multiple files
   RotatePdf
+);
+
+router.post(
+  "/reorder-pages",
+  upload.single("pdfFiles"), // Use upload.array() for multiple files
+  reorderPdf
 );
 
 router.get("/download/:fileId", tools_controller.download);
