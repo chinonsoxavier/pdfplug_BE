@@ -23,7 +23,6 @@ router.put("/verify/:token",  (req, res, next) => {
 
 router.put("/test", (req, res) => {
   res.send("sucess");
-  console.log('works');
 })
 router.post(
   "/resend-password-reset-token",
@@ -31,7 +30,6 @@ router.post(
 );
 router.post("/login", (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
-    const guestId = req.session?.guestId;
     if (err) {
       return next(err); // Handle errors
     }
@@ -46,7 +44,6 @@ router.post("/login", (req, res, next) => {
         return next(err); // Handle login errors
       }
 
-      MergeCart(req, guestId);
       res
         .status(200)
         .json({ success: true, message: "Login successful", user });

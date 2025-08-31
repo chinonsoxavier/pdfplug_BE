@@ -3,8 +3,9 @@ const mongoose = require("mongoose");
 const fileSchema = new mongoose.Schema({
   fileType: { type: String, required: true },
   fileUrl: { type: String, required: true },
-  action:{ type: String, required: true },
-  userId:{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  action: { type: String, required: true },
+  fileName: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, required: true },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -12,4 +13,5 @@ const fileSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("file", fileSchema);
+module.exports = mongoose.model("files", fileSchema);
+/*  */

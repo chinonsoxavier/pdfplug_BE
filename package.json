@@ -5,9 +5,12 @@
   },
   "dependencies": {
     "@adobe/pdfservices-node-sdk": "^4.1.0",
+    "@ilovepdf/ilovepdf-nodejs": "^0.3.1",
     "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
     "chalk": "^5.6.0",
     "connect-mongo": "^5.1.0",
+    "convertapi": "^1.15.0",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^17.2.0",
@@ -20,12 +23,15 @@
     "mongoose": "^8.17.1",
     "multer": "^2.0.1",
     "node-cron": "^4.2.1",
+    "node-stream-zip": "^1.15.0",
     "nodemailer": "^7.0.5",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
     "pdf-lib": "^1.17.1",
+    "sharp": "^0.34.3",
+    "unzipper": "^0.12.3",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

@@ -104,6 +104,8 @@ app.use(baseRoute + "auth", authRoutes);
 app.use(baseRoute + "user", userRoutes);
 app.use(baseRoute + "tools", toolsRoutes);
 
+
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
