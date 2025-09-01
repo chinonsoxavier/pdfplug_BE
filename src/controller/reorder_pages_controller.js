@@ -148,32 +148,29 @@ exports.reorderPdf = async (req, res) => {
 
       // Validate pageOrder
       if (!Array.isArray(pageOrder) || pageOrder.length === 0) {
-        await safeUnlink(inputFilePath, originalFileName);
+        // await safeUnlink(inputFilePath, originalFileName);
         return res
           .status(400)
           .json({ error: "pageOrder must be a non-empty array" });
       }
       const pageSet = new Set(pageOrder);
       if (pageSet.size !== pageOrder.length) {
-        await safeUnlink(inputFilePath, originalFileName);
+        // await safeUnlink(inputFilePath, originalFileName);
         return res
           .status(400)
           .json({ error: "pageOrder contains duplicate page numbers" });
       }
-      if (pageOrder.length !== pageCount) {
-        await safeUnlink(inputFilePath, originalFileName);
-        return res
-          .status(400)
-          .json({ error: `pageOrder must include exactly ${pageCount} pages` });
-      }
+      // if (pageOrder.length !== pageCount) {
+      //   await safeUnlink(inputFilePath, originalFileName);
+      //   return res
+      //     .status(400)
+      //     .json({ error: `pageOrder must include exactly ${pageCount} pages` });
+      // }
       for (const pageNum of pageOrder) {
         if (!Number.isInteger(pageNum) || pageNum < 1 || pageNum > pageCount) {
-          await safeUnlink(inputFilePath, originalFileName);
-          return res
-            .status(400)
-            .json({
-              error: `Invalid page number ${pageNum}: must be an integer between 1 and ${pageCount}`,
-            });
+          return res.status(400).json({
+            error: `Invalid page number ${pageNum}: must be an integer between 1 and ${pageCount}`,
+          });
         }
       }
 
@@ -211,7 +208,7 @@ exports.reorderPdf = async (req, res) => {
       });
 
       // Clean up input file
-      await safeUnlink(inputFilePath, originalFileName);
+      // await safeUnlink(inputFilePath, originalFileName);
 
       res.status(200).json({
         message: `PDF pages reordered successfully to [${pageOrder.join(
