@@ -116,19 +116,16 @@ const safeUnlink = async (
   console.error(`Failed to delete ${filePath} after ${retries} attempts`);
 };
 
-
 exports.RotatePdf = async (req, res) => {
   // Get rotation angle from request body or query (default: 90 degrees)
   const angle = parseInt(req.body.angle || req.query.angle || 90, 10);
   const validAngles = [0, 90, 180, 270];
   if (!validAngles.includes(angle)) {
-    return res
-      .status(400)
-      .json({
-        error: `Invalid rotation angle: ${angle}. Must be one of ${validAngles.join(
-          ", "
-        )}.`,
-      });
+    return res.status(400).json({
+      error: `Invalid rotation angle: ${angle}. Must be one of ${validAngles.join(
+        ", "
+      )}.`,
+    });
   }
 
   getClientIdAndProcess(req, res, async (clientId) => {
@@ -200,7 +197,7 @@ exports.RotatePdf = async (req, res) => {
 
       // Clean up input file
       await safeUnlink(inputFilePath, originalFileName);
-
+      console.log(pdfFileRecord._id, "file id");
       res.status(200).json({
         message: `PDF pages rotated successfully by ${angle} degrees. Use the link to download.`,
         file: {

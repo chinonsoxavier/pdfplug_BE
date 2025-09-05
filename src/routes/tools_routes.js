@@ -9,6 +9,13 @@ const { PdfToJpg } = require("../controller/pdf_to_jpg_controller");
 const { JpgToPdf } = require("../controller/jpg_to_pdf");
 const { RotatePdf } = require("../controller/rotate_pages_controller");
 const { reorderPdf } = require("../controller/reorder_pages_controller");
+const { ExportPdfPages } = require("../controller/extract_pages");
+const { DeletePdfPages } = require("../controller/remove_pdf_pages");
+const { AddPageNumbers } = require("../controller/add_page_number");
+const {
+  AddPageHeaderAndFooter,
+} = require("../controller/add_page_header_footer");
+const { SplitPDF } = require("../controller/split_pdf_pages");
 
 router.get("/recent-activities", tools_controller.recentActivities);
 
@@ -52,6 +59,35 @@ router.post(
   "/reorder-pages",
   upload.single("pdfFiles"), // Use upload.array() for multiple files
   reorderPdf
+);
+
+router.post(
+  "/export-pdf-pages",
+  upload.single("pdfFiles"), // Use upload.array() for multiple files
+  ExportPdfPages
+);
+router.post(
+  "/add-pdf-page-numbers",
+  upload.single("pdfFiles"), // Use upload.array() for multiple files
+  AddPageNumbers
+);
+
+router.post(
+  "/add-pdf-header-footer",
+  upload.single("pdfFiles"), // Use upload.array() for multiple files
+  AddPageHeaderAndFooter
+);
+
+router.post(
+  "/split-pdf-pages",
+  upload.single("pdfFiles"), // Use upload.array() for multiple files
+  SplitPDF
+);
+
+router.post(
+  "/delete-pdf-pages",
+  upload.single("pdfFiles"), // Use upload.array() for multiple files
+  DeletePdfPages
 );
 
 router.get("/download/:fileId", tools_controller.download);
