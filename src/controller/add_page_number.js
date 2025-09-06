@@ -183,7 +183,7 @@ exports.AddPageNumbers = async (req, res) => {
   const position = req.body.position || req.query.position || "bottom-center"; // Default position
   const fontSize = parseInt(req.body.fontSize) || 12; // Default font size
   const colorHex = req.body.color || req.query.color || "#000000"; // Default black color
-    console.log(position);
+  console.log(position);
   getClientIdAndProcess(req, res, async (clientId) => {
     let outputFilePath = null;
     const inputFilePath = req.file?.path;
@@ -290,19 +290,21 @@ exports.AddPageNumbers = async (req, res) => {
       )}/${outputFilePath}`;
 
       // Save to database
-      const pdfFileRecord = new fileModel({
-        fileType: "pdf",
-        fileUrl: downloadUrl,
-        userId: clientId,
-        action: `added page numbers to PDF (starting at ${startPosition}, ${position}, size: ${fontSize}px, color: ${colorHex})`,
-        fileName: `${req.file.originalname.replace(".pdf", "_numbered.pdf")}`,
-        icon: "pdf_number",
-      }).save();
+      const pdfFileRecord = await fileModel
+        .create({
+          fileType: "pdf",
+          fileUrl: downloadUrl,
+          userId: clientId,
+          action: `added page numbers to PDF (starting at ${startPosition}, ${position}, size: ${fontSize}px, color: ${colorHex})`,
+          fileName: `${req.file.originalname.replace(".pdf", "_numbered.pdf")}`,
+          icon: "pdf_number",
+        })
+        .save();
 
       res.status(200).json({
         message:
           "PDF page numbers added successfully. Use the link to download the numbered file.",
-          fileId: pdfFileRecord._id,
+        fileId: pdfFileRecord._id,
       });
     } catch (err) {
       console.error("Error adding page numbers to PDF:", err.stack);

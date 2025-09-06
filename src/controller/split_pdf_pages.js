@@ -248,15 +248,15 @@ exports.SplitPDF = async (req, res) => {
 
       // Save to database
       const downloadUrl = `${req.protocol}://${req.get("host")}/${zipFilePath}`;
-      const newFileRecord = new fileModel({
-        fileType: "zip",
-        fileUrl: downloadUrl,
-        userId: clientId,
-        action: `split PDF into ${ranges.length} files and compressed`,
-        fileName: `${originalFilename}_split.zip`,
-        icon: "split_pdf_pages",
-      }).save();
-
+      const newFileRecord = await fileModel
+        .create({
+          fileType: "zip",
+          fileUrl: downloadUrl,
+          userId: clientId,
+          action: `split PDF into ${ranges.length} files and compressed`,
+          fileName: `${originalFilename}_split.zip`,
+          icon: "split_pdf_pages",
+        });
       res.status(200).json({
         message:
           "PDF split and compressed successfully. Use the link to download the zip file.",

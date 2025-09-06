@@ -169,12 +169,7 @@ exports.PdfToJpg = async (req, res) => {
           ""
         )}_${qualitySetting}_quality.zip`,
         icon: "pdf_to_jpg",
-        metadata: {
-          originalFileName: req.file.originalname,
-          quality: qualitySetting,
-          totalPages: resultAssets.length,
-          conversionDate: new Date(),
-        },
+      
       });
 
       // Delete the original uploaded file

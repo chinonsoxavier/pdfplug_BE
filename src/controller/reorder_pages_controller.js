@@ -188,14 +188,15 @@ exports.reorderPdf = async (req, res) => {
       )}/${outputFilePath}`;
 
       // Save to database
-      const pdfFileRecord = new fileModel({
-        fileType: "pdf",
-        fileUrl: downloadUrl,
-        userId: clientId,
-        action: `reordered PDF pages to [${pageOrder.join(", ")}]`,
-        fileName: `reordered_${originalFileName}`,
-        icon: "reorder_pdf",
-      }).save();
+      const pdfFileRecord = await fileModel
+        .create({
+          fileType: "pdf",
+          fileUrl: downloadUrl,
+          userId: clientId,
+          action: `reordered PDF pages to [${pageOrder.join(", ")}]`,
+          fileName: `reordered_${originalFileName}`,
+          icon: "reorder_pdf",
+        })
 
       // Clean up input file
       // await safeUnlink(inputFilePath, originalFileName);

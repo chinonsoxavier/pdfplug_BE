@@ -112,15 +112,15 @@ exports.compressPdf = async (req, res) => {
           "host"
         )}/${outputFilePath}`;
 
-        const newFile = new fileModel({
-          fileType: "application/pdf",
-          fileUrl: downloadUrl,
-          userId: clientId,
-          action: `compressed Pdf (${compressionLevel.toLowerCase()})`,
-          fileName: `compressed_${file.originalname}`,
-          icon: "compress_pdf",
-        }).save();
-        
+        const newFile = await fileModel
+          .create({
+            fileType: "application/pdf",
+            fileUrl: downloadUrl,
+            userId: clientId,
+            action: `compressed Pdf (${compressionLevel.toLowerCase()})`,
+            fileName: `compressed_${file.originalname}`,
+            icon: "compress_pdf",
+          });
         successfullyCompressed.push({
           fileId: newFile._id,
           fileName: newFile.fileName,

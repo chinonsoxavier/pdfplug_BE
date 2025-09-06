@@ -108,19 +108,20 @@ exports.pdftoword = async (req, res) => {
         "host"
       )}/${outputFilePath}`;
 
-      const newFile = new fileModel({
-        fileType: "pdf",
-        fileUrl: downloadUrl,
-        userId: clientId, // Use the clientId from the callback
-        action: "converted Pdf to word",
-        fileName: req.file.originalname,
-        icon: "pdf_to_word",
-      }).save();
-
+      const newFile = await fileModel
+        .create({
+          fileType: "pdf",
+          fileUrl: downloadUrl,
+          userId: clientId, // Use the clientId from the callback
+          action: "converted Pdf to word",
+          fileName: req.file.originalname,
+          icon: "pdf_to_word",
+        });
       res.status(200).json({
         message: "File converted successfully. Use the link to download.",
         fileId: newFile._id,
       });
+      console.log(await newFile);
     } catch (err) {
       // Your error handling code...
       res.status(400).json("failed to convert pdf to docx");

@@ -21,20 +21,15 @@ exports.createUser = async (req, res) => {
     };
     if (existingUser !== null || existingUser) {
       if (!existingUser.isVerified) {
-        return res
-          .status(400)
-          .json({
-            message:
-              "email not verified!check your email for verification token",
-            status: "email not verified",
-          });
-      }
-      return res
-        .status(400)
-        .json({
-          message: "user with this email already exists",
-          status: "email already exists",
+        return res.status(400).json({
+          message: "email not verified!check your email for verification token",
+          status: "email not verified",
         });
+      }
+      return res.status(400).json({
+        message: "user with this email already exists",
+        status: "email already exists",
+      });
     }
     const newUser = await authServices.createUser(userPayload);
     const user = {
@@ -74,7 +69,7 @@ exports.createUser = async (req, res) => {
 exports.verifyUser = async (req, res) => {
   const token = req.params.token;
   const user = decodedToken(token);
-  console.log("veryfying")
+  console.log("veryfying");
   try {
     authServices.verifyUser(user);
     res.status(200).json({ message: "Email verified successfully" });

@@ -245,12 +245,6 @@ exports.DeletePdfPages = async (req, res) => {
         action: `deleted PDF pages (${pageRangesStr})`,
         fileName: `${req.file.originalname.replace(".pdf", "_deleted.pdf")}`,
         icon: "pdf_delete",
-        metadata: {
-          originalFileName: req.file.originalname,
-          exportDate: new Date(),
-          pageRanges: pageRangesStr,
-          includeOriginalMetadata,
-        },
       });
 
       res.status(200).json({
