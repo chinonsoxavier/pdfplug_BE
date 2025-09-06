@@ -290,37 +290,19 @@ exports.AddPageNumbers = async (req, res) => {
       )}/${outputFilePath}`;
 
       // Save to database
-      const pdfFileRecord = await fileModel.create({
+      const pdfFileRecord = new fileModel({
         fileType: "pdf",
         fileUrl: downloadUrl,
         userId: clientId,
         action: `added page numbers to PDF (starting at ${startPosition}, ${position}, size: ${fontSize}px, color: ${colorHex})`,
         fileName: `${req.file.originalname.replace(".pdf", "_numbered.pdf")}`,
         icon: "pdf_number",
-        metadata: {
-          originalFileName: req.file.originalname,
-          modificationDate: new Date(),
-          startPosition,
-          position,
-          fontSize,
-          color: colorHex,
-        },
-      });
+      }).save();
 
       res.status(200).json({
         message:
           "PDF page numbers added successfully. Use the link to download the numbered file.",
-        options: {
-          startPosition,
-          position,
-          fontSize,
-          color: colorHex,
-        },
-        file: {
           fileId: pdfFileRecord._id,
-          downloadUrl,
-          fileName: `${req.file.originalname.replace(".pdf", "_numbered.pdf")}`,
-        },
       });
     } catch (err) {
       console.error("Error adding page numbers to PDF:", err.stack);

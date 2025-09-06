@@ -259,7 +259,7 @@ exports.GetUser = async (req, res) => {
         status: 200,
       });
     }
-    res.status(404).json("User not Logged in");
+    res.send("User not Logged in");
   } catch (error) {
     res.status(401).json(error);
     console.log(error);

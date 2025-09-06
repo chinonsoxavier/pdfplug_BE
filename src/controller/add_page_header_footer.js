@@ -944,26 +944,14 @@ exports.AddPageHeaderAndFooter = async (req, res) => {
       )}/${outputFilePath}`;
 
       // Save to database
-      const pdfFileRecord = await fileModel.create({
+      const pdfFileRecord = new fileModel ({
         fileType: "pdf",
         fileUrl: downloadUrl,
         userId: clientId,
         action: `added headers and footers to PDF`,
         fileName: `${req.file.originalname.replace(".pdf", "_modified.pdf")}`,
         icon: "pdf_header_footer",
-        metadata: {
-          originalFileName: req.file.originalname,
-          modificationDate: new Date(),
-          headerOption,
-          footerOption,
-          customHeaderText,
-          customFooterText,
-          headerPosition,
-          footerPosition,
-          fontSize,
-          color: colorHex,
-        },
-      });
+      }).save();
 
       res.status(200).json({
         message:

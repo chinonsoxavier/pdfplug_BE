@@ -235,33 +235,19 @@ exports.ExportPdfPages = async (req, res) => {
       )}/${outputFilePath}`;
 
       // Save to database
-      const pdfFileRecord = await fileModel.create({
+      const pdfFileRecord = new fileModel({
         fileType: "pdf",
         fileUrl: downloadUrl,
         userId: clientId,
         action: `exported PDF pages (${pageRangesStr})`,
         fileName: `${req.file.originalname.replace(".pdf", "_exported.pdf")}`,
         icon: "pdf_export",
-        metadata: {
-          originalFileName: req.file.originalname,
-          exportDate: new Date(),
-          pageRanges: pageRangesStr,
-          includeOriginalMetadata,
-        },
-      });
+      }).save();
 
       res.status(200).json({
         message:
           "PDF pages exported successfully. Use the link to download the exported file.",
-        options: {
-          pageRanges: pageRangesStr,
-          includeOriginalMetadata,
-        },
-        file: {
-          fileId: pdfFileRecord._id,
-          downloadUrl: downloadUrl,
-          fileName: `${req.file.originalname.replace(".pdf", "_exported.pdf")}`,
-        },
+          fileId: pdfFileRecord._id
       });
     } catch (err) {
       console.error("Error exporting PDF pages:", err.stack);

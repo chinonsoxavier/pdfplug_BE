@@ -100,6 +100,9 @@ const userRoutes = require("./src/routes/user_routes.js");
 const baseRoute = "/api/v1/";
 app.use("/uploads", express.static("uploads"));
 app.use("/downloads", express.static("downloads"));
+app.get("/", (req, res) => {
+  res.send("API is running...");
+});
 app.use(baseRoute + "auth", authRoutes);
 app.use(baseRoute + "user", userRoutes);
 app.use(baseRoute + "tools", toolsRoutes);

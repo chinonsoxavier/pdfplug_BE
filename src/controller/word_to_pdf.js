@@ -85,19 +85,20 @@ exports.Wordtopdf = async (req, res) => {
         "host"
       )}/${outputFilePath}`;
 
-      const newFile = await fileModel.create({
+      const newFile = new fileModel({
         fileType: "word", // The original file type
         fileUrl: downloadUrl,
         userId: clientId,
         action: "converted Word to pdf", // New action
         fileName: req.file.originalname,
         icon: "word_to_pdf",
-      });
-
+      }).save();
+      
       res.status(200).json({
         message: "File converted successfully. Use the link to download.",
         fileId: newFile._id,
       });
+
     } catch (err) {
       res.status(400).json("failed to convert word to pdf");
       if (

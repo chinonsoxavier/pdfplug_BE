@@ -256,15 +256,7 @@ exports.DeletePdfPages = async (req, res) => {
       res.status(200).json({
         message:
           "PDF pages deleted successfully. Use the link to download the modified file.",
-        options: {
-          pageRanges: pageRangesStr,
-          includeOriginalMetadata,
-        },
-        file: {
           fileId: pdfFileRecord._id,
-          downloadUrl: downloadUrl,
-          fileName: `${req.file.originalname.replace(".pdf", "_deleted.pdf")}`,
-        },
       });
     } catch (err) {
       console.error("Error deleting PDF pages:", err.stack);

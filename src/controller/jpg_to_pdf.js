@@ -183,29 +183,12 @@ exports.JpgToPdf = async (req, res) => {
         action: `converted jpg to pdf (${orientationSetting}, ${marginSetting} margin)`,
         fileName: `${req.file.originalname.replace(/\.(jpg|jpeg)$/i, ".pdf")}`,
         icon: "jpg_to_pdf",
-        metadata: {
-          originalFileName: req.file.originalname,
-          conversionDate: new Date(),
-          orientation: orientationSetting,
-          margin: marginSetting,
-        },
       });
 
       res.status(200).json({
         message:
           "File converted successfully. Use the link to download the PDF file.",
-        options: {
-          margin: marginSetting,
-          orientation: orientationSetting,
-        },
-        file: {
           fileId: pdfFileRecord._id,
-          downloadUrl: downloadUrl,
-          fileName: `${req.file.originalname.replace(
-            /\.(jpg|jpeg)$/i,
-            ".pdf"
-          )}`,
-        },
       });
     } catch (err) {
       console.error("Error converting JPG to PDF:", err);

@@ -237,14 +237,14 @@ exports.mergePdfs = async (req, res) => {
       )}/${outputFilePath}`;
 
       // 8. Save file record in DB
-      const newFile = await fileModel.create({
+      const newFile = new fileModel({
         fileType: "application/pdf",
         fileUrl: downloadUrl,
         userId: clientId,
         action: "Merged PDF files",
         fileName: `merged_document_${Date.now()}.pdf`,
         icon: "merge_pdf",
-      });
+      }).save();
 
       res.status(200).json({
         message: "PDFs merged successfully",

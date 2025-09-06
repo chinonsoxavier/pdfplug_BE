@@ -183,16 +183,7 @@ exports.PdfToJpg = async (req, res) => {
       res.status(200).json({
         message:
           "File converted successfully. Use the link to download the zip file.",
-        quality: qualitySetting,
-        file: {
           fileId: zipFileRecord._id,
-          downloadUrl: zipDownloadUrl,
-          fileName: `${req.file.originalname.replace(
-            ".pdf",
-            ""
-          )}_${qualitySetting}_quality.zip`,
-          totalPages: resultAssets.length,
-        },
       });
     } catch (err) {
       console.error("Error:", err);

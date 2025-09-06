@@ -181,19 +181,14 @@ exports.RotatePdf = async (req, res) => {
       )}/${outputFilePath}`;
 
       // Save to database
-      const pdfFileRecord = await fileModel.create({
+      const pdfFileRecord = new fileModel({
         fileType: "pdf",
         fileUrl: downloadUrl,
         userId: clientId,
         action: `rotated PDF pages by ${angle} degrees`,
         fileName: `rotated_${originalFileName}`,
         icon: "rotate_pdf",
-        metadata: {
-          originalFileName,
-          conversionDate: new Date(),
-          rotationAngle: angle,
-        },
-      });
+      }).save();
 
       // Clean up input file
       await safeUnlink(inputFilePath, originalFileName);

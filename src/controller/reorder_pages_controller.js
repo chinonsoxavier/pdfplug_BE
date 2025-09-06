@@ -160,12 +160,7 @@ exports.reorderPdf = async (req, res) => {
           .status(400)
           .json({ error: "pageOrder contains duplicate page numbers" });
       }
-      // if (pageOrder.length !== pageCount) {
-      //   await safeUnlink(inputFilePath, originalFileName);
-      //   return res
-      //     .status(400)
-      //     .json({ error: `pageOrder must include exactly ${pageCount} pages` });
-      // }
+
       for (const pageNum of pageOrder) {
         if (!Number.isInteger(pageNum) || pageNum < 1 || pageNum > pageCount) {
           return res.status(400).json({
@@ -193,19 +188,14 @@ exports.reorderPdf = async (req, res) => {
       )}/${outputFilePath}`;
 
       // Save to database
-      const pdfFileRecord = await fileModel.create({
+      const pdfFileRecord = new fileModel({
         fileType: "pdf",
         fileUrl: downloadUrl,
         userId: clientId,
         action: `reordered PDF pages to [${pageOrder.join(", ")}]`,
         fileName: `reordered_${originalFileName}`,
         icon: "reorder_pdf",
-        metadata: {
-          originalFileName,
-          conversionDate: new Date(),
-          pageOrder,
-        },
-      });
+      }).save();
 
       // Clean up input file
       // await safeUnlink(inputFilePath, originalFileName);

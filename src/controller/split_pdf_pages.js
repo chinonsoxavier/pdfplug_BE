@@ -1,74 +1,20 @@
-const {
-  ServicePrincipalCredentials,
-  PDFServices,
-  MimeType,
-  SplitPDFJob,
-  SplitPDFParams,
-  SplitPDFResult,
-  PageRanges,
-  SDKError,
-  ServiceUsageError,
-  ServiceApiError,
-} = require("@adobe/pdfservices-node-sdk");
 const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
-const { promisify } = require("util");
-const unlinkAsync = promisify(fs.unlink);
-const fileModel = require("../models/file_model");
 const archiver = require("archiver");
 const stream = require("stream");
 const { pipeline } = stream;
+const { PDFDocument } = require("pdf-lib");
+const { promisify } = require("util");
 const streamPipeline = promisify(pipeline);
+const fsp = fs.promises;
+const fileModel = require("../models/file_model");
 
 // Ensure directories exist
 const downloadDir = path.join("downloads");
 const uploadDir = path.join("uploads");
 if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true });
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-// Function to generate output file path for multiple files
-function createOutputFilePath(ext, index) {
-  const filePath = downloadDir;
-  const date = new Date();
-  const dateString =
-    date.getFullYear() +
-    "-" +
-    ("0" + (date.getMonth() + 1)).slice(-2) +
-    "-" +
-    ("0" + date.getDate()).slice(-2) +
-    "T" +
-    ("0" + date.getHours()).slice(-2) +
-    "-" +
-    ("0" + date.getMinutes()).slice(-2) +
-    "-" +
-    ("0" + date.getSeconds()).slice(-2);
-  // Add a unique index to the filename for multiple outputs
-  return `${filePath}/split_${dateString}_${index}.${ext}`;
-}
-
-// Reusable function for client ID determination
-const getClientIdAndProcess = (req, res, callback) => {
-  const guestId = req.session?.guestId;
-  const userId = req.session?.passport?.user;
-  if (userId) {
-    return callback(userId);
-  }
-  if (guestId) {
-    console.log(guestId, "oldguest");
-    return callback(guestId);
-  }
-  const newGuestId = new mongoose.Types.ObjectId().toString();
-  req.session.guestId = newGuestId;
-  console.log(newGuestId, "newGuest");
-  req.session.save((err) => {
-    if (err) {
-      console.error("Session save error:", err);
-      return res.status(500).json({ error: "Failed to save session" });
-    }
-    callback(newGuestId);
-  });
-};
 
 // Helper function to safely delete a file with logging
 const safeUnlink = async (filePath, fileName = "unknown") => {
@@ -78,7 +24,7 @@ const safeUnlink = async (filePath, fileName = "unknown") => {
   }
   try {
     if (fs.existsSync(filePath)) {
-      await unlinkAsync(filePath);
+      await fsp.unlink(filePath);
       console.log(`Successfully deleted file: ${filePath}`);
     } else {
       console.warn(`File not found for deletion: ${filePath}`);
@@ -88,177 +34,241 @@ const safeUnlink = async (filePath, fileName = "unknown") => {
   }
 };
 
-const parsePageRanges = (rangesStr) => {
-  const pageRanges = new PageRanges();
-  const rangeParts = rangesStr
-    .split(",")
-    .map((part) => part.trim())
-    .filter((part) => part !== "");
+// Helper function to parse and validate page ranges
+const parsePageRanges = (rangesInput, pageCount) => {
+  let ranges = [];
+  const invalidRanges = [];
 
+  // Handle both string and array inputs
+  let rangeParts;
+  if (typeof rangesInput === "string") {
+    rangeParts = rangesInput
+      .split(",")
+      .map((part) => part.trim())
+      .filter((part) => part);
+  } else if (Array.isArray(rangesInput)) {
+    rangeParts = rangesInput.filter(
+      (part) => typeof part === "string" && part.trim()
+    );
+  } else {
+    console.warn("Invalid page ranges format; defaulting to all pages");
+    ranges.push({ start: 1, end: pageCount });
+    return { ranges, invalidRanges };
+  }
+
+  let lastTo = 0;
   for (const part of rangeParts) {
     try {
+      let start, end;
       if (part.includes("-")) {
-        const [start, end] = part.split("-").map(Number);
-        if (!isNaN(start) && !isNaN(end) && start > 0 && end >= start) {
-          pageRanges.addRange(start, end);
-        } else {
-          console.warn(`Invalid page range format: ${part}`);
+        [start, end] = part.split("-").map((num) => parseInt(num.trim()));
+        if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
+          console.warn(`Invalid range: ${part}`);
+          invalidRanges.push(part);
+          continue;
         }
+        if (start > pageCount || end > pageCount) {
+          console.warn(`Range ${part} exceeds PDF page count (${pageCount})`);
+          invalidRanges.push(part);
+          continue;
+        }
+        if (start <= lastTo) {
+          console.warn(
+            `Range ${part} overlaps or is out of order with previous range (lastTo: ${lastTo})`
+          );
+          invalidRanges.push(part);
+          continue;
+        }
+        ranges.push({ start, end });
+        lastTo = end;
       } else {
-        const pageNum = Number(part);
-        if (!isNaN(pageNum) && pageNum > 0) {
-          pageRanges.addSinglePage(pageNum);
-        } else {
-          console.warn(`Invalid single page number: ${part}`);
+        const pageNum = parseInt(part);
+        if (isNaN(pageNum) || pageNum < 1) {
+          console.warn(`Invalid page number: ${part}`);
+          invalidRanges.push(part);
+          continue;
         }
+        if (pageNum > pageCount) {
+          console.warn(`Page ${part} exceeds PDF page count (${pageCount})`);
+          invalidRanges.push(part);
+          continue;
+        }
+        if (pageNum <= lastTo) {
+          console.warn(
+            `Page ${part} overlaps or is out of order with previous range (lastTo: ${lastTo})`
+          );
+          invalidRanges.push(part);
+          continue;
+        }
+        ranges.push({ start: pageNum, end: pageNum });
+        lastTo = pageNum;
       }
     } catch (err) {
-      console.warn(`Error parsing range part ${part}: ${err.message}`);
+      console.warn(`Error parsing range ${part}: ${err.message}`);
+      invalidRanges.push(part);
     }
   }
-  return pageRanges;
+
+  if (ranges.length === 0) {
+    console.warn("No valid ranges provided; defaulting to all pages");
+    ranges.push({ start: 1, end: pageCount });
+  }
+
+  return { ranges, invalidRanges };
+};
+
+// Reusable function for client ID determination
+const getClientIdAndProcess = (req, res, callback) => {
+  const guestId = req.session?.guestId;
+  const userId = req.session?.passport?.user;
+  if (userId) {
+    console.log(`Using userId: ${userId}`);
+    return callback(userId);
+  }
+  if (guestId) {
+    console.log(`Using guestId: ${guestId}`);
+    return callback(guestId);
+  }
+  const newGuestId = new mongoose.Types.ObjectId().toString();
+  console.log(`Generated new guestId: ${newGuestId}`);
+  req.session.guestId = newGuestId;
+  req.session.save((err) => {
+    if (err) {
+      console.error("Session save error:", err);
+      return res.status(500).json({ error: "Failed to save session" });
+    }
+    callback(newGuestId);
+  });
 };
 
 exports.SplitPDF = async (req, res) => {
-  const getClientIdAndProcessWrapper = (callback) =>
-    getClientIdAndProcess(req, res, callback);
+  console.log("Raw request payload:", {
+    body: req.body,
+    query: req.query,
+    file: req.file
+      ? { originalname: req.file.originalname, path: req.file.path }
+      : null,
+  });
 
-  getClientIdAndProcessWrapper(async (clientId) => {
-    let readStream;
-    const inputFilePath = req.file?.path;
-    const pageRangesInput = req.body.pageRanges ||
-      req.query.pageRanges || ["1","1-2"];
+  const inputFilePath = req.file?.path;
+  let pageRangesInput = req.body.pageRanges ||
+    req.query.pageRanges || ["1-3", "4"];
+  console.log(`Received pageRanges: ${JSON.stringify(pageRangesInput)}`);
 
-    if (!inputFilePath || !fs.existsSync(inputFilePath)) {
-      return res.status(400).json({
-        error: "No file provided or file not found.",
-      });
-    }
+  if (!inputFilePath || !fs.existsSync(inputFilePath)) {
+    console.error("No file provided or file not found");
+    return res
+      .status(400)
+      .json({ error: "No file provided or file not found." });
+  }
 
-    let pageRanges;
-    // Handle array or string input for page ranges
-    if (Array.isArray(pageRangesInput)) {
-      pageRanges = new PageRanges();
-      pageRangesInput.forEach((rangeStr) => {
-        const [start, end] = String(rangeStr).split("-").map(Number);
-        if (end) {
-          pageRanges.addRange(start, end);
-        } else {
-          pageRanges.addSinglePage(start);
-        }
-      });
-    } else if (typeof pageRangesInput === "string") {
-      pageRanges = parsePageRanges(pageRangesInput);
-    } else {
-      return res.status(400).json({
-        error: "Page ranges are required and must be a string or array.",
-      });
-    }
+  const stats = fs.statSync(inputFilePath);
+  if (stats.size === 0) {
+    console.error("Input file is empty");
+    return res.status(400).json({ error: "Uploaded file is empty" });
+  }
 
-    let tempDir = path.join(downloadDir, `temp_${Date.now()}`);
-    let zipFilePath = path.join(downloadDir, `split_pdf_${Date.now()}.zip`);
+  getClientIdAndProcess(req, res, async (clientId) => {
+    const tempDir = path.join(downloadDir, `temp_${Date.now()}`);
+    const zipFilePath = path.join(downloadDir, `split_pdf_${Date.now()}.zip`);
+    const originalFilename = req.file.originalname.split(".")[0];
 
     try {
-      fs.mkdirSync(tempDir);
+      // Create directories
+      await fsp.mkdir(tempDir, { recursive: true });
+      console.log(`Created temporary directory: ${tempDir}`);
 
-      const credentials = new ServicePrincipalCredentials({
-        clientId: process.env.PDF_SERVICES_CLIENT_ID,
-        clientSecret: process.env.PDF_SERVICES_CLIENT_SECRET,
-      });
+      // Load the original PDF
+      console.log(`Loading PDF from: ${inputFilePath}`);
+      const pdfBytes = await fsp.readFile(inputFilePath);
+      let pdfDoc;
+      try {
+        pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: false });
+      } catch (err) {
+        console.error("Failed to load PDF:", err.message);
+        return res
+          .status(400)
+          .json({ error: `Invalid or encrypted PDF: ${err.message}` });
+      }
+      const pageCount = pdfDoc.getPageCount();
+      console.log(`Input PDF page count: ${pageCount}`);
 
-      const pdfServices = new PDFServices({
-        credentials,
-        timeout: 80000,
-      });
-
-      readStream = fs.createReadStream(inputFilePath);
-      const inputAsset = await pdfServices.upload({
-        readStream,
-        mimeType: MimeType.PDF,
-      });
-
-      const params = new SplitPDFParams({
-        pageRanges,
-      });
-      const job = new SplitPDFJob({
-        inputAsset,
-        params,
-      });
-
-      const pollingURL = await pdfServices.submit({
-        job,
-      });
-      const pdfServicesResponse = await pdfServices.getJobResult({
-        pollingURL,
-        resultType: SplitPDFResult,
-      });
-
-      const resultAssets = pdfServicesResponse.result.assets;
-
-      // Save each split PDF to a temporary directory
-      for (let i = 0; i < resultAssets.length; i++) {
-        const streamAsset = await pdfServices.getContent({
-          asset: resultAssets[i],
+      // Parse and validate page ranges
+      const { ranges, invalidRanges } = parsePageRanges(
+        pageRangesInput,
+        pageCount
+      );
+      if (invalidRanges.length > 0) {
+        console.warn(`Invalid ranges detected: ${invalidRanges.join(", ")}`);
+        return res.status(400).json({
+          error: `Invalid page ranges: ${invalidRanges.join(", ")}`,
         });
-        const tempFilePath = path.join(tempDir, `part_${i + 1}.pdf`);
-        await streamPipeline(
-          streamAsset.readStream,
-          fs.createWriteStream(tempFilePath)
+      }
+      console.log("Validated ranges:", ranges);
+
+      // Split PDF into parts
+      const outputFiles = [];
+      for (let i = 0; i < ranges.length; i++) {
+        const { start, end } = ranges[i];
+        console.log(`Processing range ${start}-${end}`);
+        const newPdfDoc = await PDFDocument.create();
+        const pageIndices = Array.from(
+          { length: end - start + 1 },
+          (_, k) => start - 1 + k
         );
+        const pages = await newPdfDoc.copyPages(pdfDoc, pageIndices);
+        pages.forEach((page) => newPdfDoc.addPage(page));
+        const outputBytes = await newPdfDoc.save();
+        const tempFilePath = path.join(
+          tempDir,
+          `${originalFilename}_part_${i + 1}.pdf`
+        );
+        await fsp.writeFile(tempFilePath, outputBytes);
+        console.log(`Saved part ${i + 1} to ${tempFilePath}`);
+        outputFiles.push(tempFilePath);
       }
 
-      // Create a zip file from the temporary directory
+      // Create a zip file
+      console.log(`Creating zip file at ${zipFilePath}`);
       const zipOutputStream = fs.createWriteStream(zipFilePath);
-      const archive = archiver("zip", {
-        zlib: {
-          level: 9,
-        },
+      const archive = archiver("zip", { zlib: { level: 9 } });
+      archive.on("warning", (err) => console.warn("Archiver warning:", err));
+      archive.on("error", (err) => {
+        console.error("Archiver error:", err);
+        throw err;
       });
       archive.directory(tempDir, false);
       archive.finalize();
-
       await streamPipeline(archive, zipOutputStream);
+      console.log(`Zip file created: ${zipFilePath}`);
 
-      // Clean up the temporary directory and its contents
-      fs.rmSync(tempDir, { recursive: true, force: true });
+      // Clean up
+      await fsp.rm(tempDir, { recursive: true, force: true });
       await safeUnlink(inputFilePath, req.file.originalname);
 
-      const downloadUrl = `${req.protocol}s://${req.get(
-        "host"
-      )}/${zipFilePath}`;
-
-      // Save a single record for the zipped file
-      const newFileRecord = await fileModel.create({
+      // Save to database
+      const downloadUrl = `${req.protocol}://${req.get("host")}/${zipFilePath}`;
+      const newFileRecord = new fileModel({
         fileType: "zip",
         fileUrl: downloadUrl,
         userId: clientId,
-        action: `split PDF into ${resultAssets.length} files and compressed`,
-        fileName: `${req.file.originalname.split(".")[0]}_split.zip`,
-        icon: "zip_file",
-        metadata: {
-          pageRanges: JSON.stringify(pageRangesInput),
-          outputFileCount: resultAssets.length,
-        },
-      });
+        action: `split PDF into ${ranges.length} files and compressed`,
+        fileName: `${originalFilename}_split.zip`,
+        icon: "split_pdf_pages",
+      }).save();
 
       res.status(200).json({
         message:
           "PDF split and compressed successfully. Use the link to download the zip file.",
         fileId: newFileRecord._id,
-        downloadUrl: downloadUrl,
       });
     } catch (err) {
       console.error("Error splitting PDF:", err.stack);
-      // Clean up on error
-      if (fs.existsSync(tempDir))
-        fs.rmSync(tempDir, { recursive: true, force: true });
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
       await safeUnlink(inputFilePath, req.file?.originalname || "unknown");
-
       res.status(400).json({
         error: `Failed to split PDF: ${err.message}`,
       });
-    } finally {
-      readStream?.destroy();
     }
   });
 };
