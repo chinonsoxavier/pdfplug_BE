@@ -90,6 +90,8 @@ router.post(
   DeletePdfPages
 );
 
+router.delete("/delete-file/:fileId", tools_controller.deleteFile);
+
 router.get("/download/:fileId", tools_controller.download);
 
 module.exports = router;

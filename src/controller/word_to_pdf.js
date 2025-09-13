@@ -81,24 +81,27 @@ exports.Wordtopdf = async (req, res) => {
       const outputFilePath = createOutputFilePath("pdf"); // Pass the extension
       const outputStream = fs.createWriteStream(outputFilePath);
       streamAsset.readStream.pipe(outputStream);
-      const downloadUrl = `${req.protocol}s://${req.get(
+      const downloadUrl = `${req.protocol}://${req.get(
         "host"
       )}/${outputFilePath}`;
 
       const newFile = await fileModel.create({
-          fileType: "word", // The original file type
-          fileUrl: downloadUrl,
-          userId: clientId,
-          action: "converted Word to pdf", // New action
-          fileName: req.file.originalname,
-          icon: "word_to_pdf",
+        fileType: "word", // The original file type
+        fileUrl: downloadUrl,
+        userId: clientId,
+        action: "converted Word to pdf", // New action
+        fileName: req.file.originalname,
+        icon: "word_to_pdf",
+        path: req.file.path,
       });
-      
+
+      console.log(req.file.path);
+
       res.status(200).json({
         message: "File converted successfully. Use the link to download.",
         fileId: newFile._id,
+        fileUrl: downloadUrl,
       });
-
     } catch (err) {
       res.status(400).json("failed to convert word to pdf");
       if (

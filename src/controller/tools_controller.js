@@ -27,10 +27,10 @@ exports.recentActivities = async (req, res) => {
         .json({ recentActivities: [], message: "No recent activities found." });
     }
 
-   const activities = await fileModel
-     .find({ userId: clientId })
-     .sort({ createdAt: -1 })
-     .limit(10);
+    const activities = await fileModel
+      .find({ userId: clientId })
+      .sort({ createdAt: -1 })
+      .limit(10);
     const users = await userModel.find();
     // const FileModels = await FileModel.find();
 
@@ -62,9 +62,9 @@ exports.download = async (req, res) => {
 
     // 1. Validate the ID first to prevent unnecessary database queries and errors
     if (!ObjectId.isValid(Id)) {
-      return res
-        .status(400)
-        .json({ message: "Error: Invalid file ID format." });
+      console.log("invalid file id");
+      res.status(400).json("Error: Invalid file ID format.");
+      return;
     }
 
     // 2. Convert the valid string ID to an ObjectId
@@ -73,39 +73,110 @@ exports.download = async (req, res) => {
     // 3. Find the file in the database
     const file = await fileModel.findOne({ _id: fileId });
 
+    if (file === null || !file) {
+      console.log("file not found");
+      return res.status(404).json("file not found or expired!");
+    }
     // 4. Check if a document was found
     if (file) {
+      console.log("file found");
+
       // 5. Send the file URL to the client
       const fileUrl = file.fileUrl;
-      res.redirect(fileUrl);
+      const filePath = file.path;
+      // res.status(200).json(fileUrl);
+      console.log(fileUrl);
+      console.log(filePath);
+      res.download(filePath);
       return;
       // return res.status(200).json(fileUrl);
     }
 
     // 6. If no document was found
-    return res.status(404).json({ message: "File not found!" });
+    return res.status(404).json("File not found!");
   } catch (error) {
     // Catch unexpected errors (e.g., database connection issues)
     console.error(error);
-    res.status(500).json({ message: "An unexpected server error occurred." });
+    res.status(500).json("An unexpected server error occurred.");
   }
 };
 
-cron.schedule("*/10 * * * *", async () => {
-  const oneHourAgo = new Date(Date.now() - 3600 * 1000);
-  const oldFiles = await fileModel.find({ createdAt: { $lt: oneHourAgo } });
-  for (let file of oldFiles) {
-    try {
-      if (fs.existsSync(file.fileUrl)) {
-        fs.unlinkSync(file.fileUrl);
-      }
-      await fileModel.findByIdAndDelete(file._id);
-      console.log("file deleted");
-    } catch (error) {
-      console.log("failed to delete file");
+exports.deleteFile = async (req, res) => {
+  try {
+    const { fileId } = req.params; // we’ll send :fileId in the route param
+
+    // 1. Find the file in MongoDB
+    const fileDoc = await fileModel.findById(fileId);
+    console.log(fileDoc);
+    console.log(fileId);
+    if (!fileDoc) {
+      return res.status(404).json({ error: "File not found in database" });
     }
+    // 2. Derive the local path from stored fileUrl
+    // Example: http://localhost:5000/downloads/2025-08-31T14-30-00.pdf
+    const fileUrl = fileDoc.fileUrl;
+    const relativePath = fileUrl.split(`${req.get("host")}/`)[1]; // take path after host
+    const localPath = path.join(process.cwd(), relativePath);
+    console.log(relativePath, "relative path");
+    console.log(localPath, "local path");
+    // 3. Delete the file from filesystem (if it exists)
+    if (fs.existsSync(localPath)) {
+      fs.unlinkSync(localPath);
+    }
+
+    // 4. Delete the record from MongoDB
+    await fileModel.findByIdAndDelete(fileId);
+
+    res.status(200).json({ message: "File and record deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting file:", err);
+    res.status(500).json({ error: "Failed to delete file" });
+  }
+};
+
+const verifyDownloadId = (req, res) => {
+  try {
+    const id = req.params.id;
+  } catch (error) {
+    console.log(error);
+    res.status(400).json("could not verify download id!");
+  }
+};
+
+// Cron job to clean up old files
+cron.schedule("0 * * * *", async () => {
+  console.log("Running file cleanup job...");
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    // Find files older than 1 hour
+    const oldFiles = await File.find({
+      createdAt: { $lt: oneHourAgo },
+    }).lean();
+
+    for (const file of oldFiles) {
+      try {
+        // Convert relative path to absolute path
+        const absolutePath = path.resolve(file.fileUrl);
+        if (fs.existsSync(absolutePath)) {
+          fs.unlinkSync(absolutePath);
+          console.log(`Deleted file: ${file.fileName}`);
+        }
+
+        // Delete from database
+        await File.findByIdAndDelete(file._id);
+      } catch (error) {
+        console.error(`Error processing file ${file._id}:`, error.message);
+      }
+    }
+
+    console.log(`Cleanup completed. Deleted ${oldFiles.length} files.`);
+  } catch (error) {
+    console.error("Error in cron job:", error.message);
   }
 });
+
+console.log("Cron job scheduled to run hourly.");
 
 exports.getClientIdAndProcess = (req, res, callback) => {
   const guestId = req.session?.guestId;
