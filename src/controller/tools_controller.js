@@ -1,3 +1,4 @@
+const axios = require("axios"); // Install with 'npm install axios'
 const userModel = require("../models/user_model");
 const fileModel = require("../models/file_model");
 const fs = require("fs");
@@ -10,7 +11,6 @@ if (!fs.existsSync(downloadDir)) {
   fs.mkdirSync(downloadDir);
 }
 exports.recentActivities = async (req, res) => {
-  console.log("worked!");
   try {
     const userId = req.session?.passport?.user;
     const guestId = req.session?.guestId;
@@ -56,15 +56,18 @@ exports.recentActivities = async (req, res) => {
   }
 };
 
+
+
+
 exports.download = async (req, res) => {
   try {
     const Id = req.params.fileId;
 
     // 1. Validate the ID first to prevent unnecessary database queries and errors
     if (!ObjectId.isValid(Id)) {
-      console.log("invalid file id");
-      res.status(400).json("Error: Invalid file ID format.");
-      return;
+      return res
+        .status(400)
+        .json({ message: "Error: Invalid file ID format." });
     }
 
     // 2. Convert the valid string ID to an ObjectId
@@ -73,31 +76,21 @@ exports.download = async (req, res) => {
     // 3. Find the file in the database
     const file = await fileModel.findOne({ _id: fileId });
 
-    if (file === null || !file) {
-      console.log("file not found");
-      return res.status(404).json("file not found or expired!");
-    }
     // 4. Check if a document was found
     if (file) {
-      console.log("file found");
-
       // 5. Send the file URL to the client
       const fileUrl = file.fileUrl;
-      const filePath = file.path;
-      // res.status(200).json(fileUrl);
-      console.log(fileUrl);
-      console.log(filePath);
-      res.download(filePath);
+      res.redirect(fileUrl);
       return;
       // return res.status(200).json(fileUrl);
     }
 
     // 6. If no document was found
-    return res.status(404).json("File not found!");
+    return res.status(404).json({ message: "File not found!" });
   } catch (error) {
     // Catch unexpected errors (e.g., database connection issues)
     console.error(error);
-    res.status(500).json("An unexpected server error occurred.");
+    res.status(500).json({ message: "An unexpected server error occurred." });
   }
 };
 

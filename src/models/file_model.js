@@ -5,6 +5,7 @@ const fileSchema = new mongoose.Schema({
   fileUrl: { type: String, required: true },
   action: { type: String, required: true },
   fileName: { type: String, required: true },
+  path:{type:String},
   userId: { type: mongoose.Schema.Types.ObjectId, required: true },
   createdAt: {
     type: Date,

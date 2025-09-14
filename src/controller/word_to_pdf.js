@@ -92,10 +92,12 @@ exports.Wordtopdf = async (req, res) => {
         action: "converted Word to pdf", // New action
         fileName: req.file.originalname,
         icon: "word_to_pdf",
-        path: req.file.path,
+        path: outputFilePath,
       });
 
       console.log(req.file.path);
+      console.log(downloadUrl, "download url");
+      console.log(newFile?._id, "file id");
 
       res.status(200).json({
         message: "File converted successfully. Use the link to download.",
