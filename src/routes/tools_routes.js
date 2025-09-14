@@ -94,4 +94,6 @@ router.delete("/delete-file/:fileId", tools_controller.deleteFile);
 
 router.get("/download/:fileId", tools_controller.download);
 
+router.get("/get-file-info/:id",tools_controller.getFileInfo);
+
 module.exports = router;

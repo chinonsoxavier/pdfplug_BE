@@ -120,6 +120,7 @@ exports.pdftoword = async (req, res) => {
       res.status(200).json({
         message: "File converted successfully. Use the link to download.",
         fileId: newFile._id,
+        fileUrl:downloadUrl
       });
       console.log(await newFile);
     } catch (err) {

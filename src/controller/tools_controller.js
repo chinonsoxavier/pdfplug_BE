@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const cron = require("node-cron");
 const mongoose = require("mongoose");
+// const file_model = require("../models/file_model");
 const { ObjectId } = mongoose.Types;
 const downloadDir = path.join("downloads");
 if (!fs.existsSync(downloadDir)) {
@@ -56,9 +57,6 @@ exports.recentActivities = async (req, res) => {
   }
 };
 
-
-
-
 exports.download = async (req, res) => {
   try {
     const Id = req.params.fileId;
@@ -80,7 +78,8 @@ exports.download = async (req, res) => {
     if (file) {
       // 5. Send the file URL to the client
       const fileUrl = file.fileUrl;
-      res.redirect(fileUrl);
+      const fileName = file.fileName;
+      res.status(200).json({ fileName: fileName, fileUrl: fileUrl });
       return;
       // return res.status(200).json(fileUrl);
     }
@@ -124,6 +123,27 @@ exports.deleteFile = async (req, res) => {
   } catch (err) {
     console.error("Error deleting file:", err);
     res.status(500).json({ error: "Failed to delete file" });
+  }
+};
+
+exports.getFileInfo = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const FileModel = await fileModel.findOne({_id:id});
+
+    if (FileModel === null || undefined) {
+      res.status(404).json("file not found in database");
+      return;
+    }
+
+    res.status(200).json({
+      fileUrl: FileModel.fileUrl,
+      fileType: FileModel.fileType,
+      fileId: FileModel?._id,
+      fileName: FileModel.fileName,
+    });
+  } catch (error) {
+    console.log(error);
   }
 };
 
