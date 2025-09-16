@@ -9,8 +9,6 @@ const fileModel = require("../models/file_model");
 // Ensure directories exist
 const downloadDir = path.join("downloads");
 const uploadDir = path.join("uploads");
-if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir);
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 // Function to generate output file path
 function createOutputFilePath(ext) {
@@ -248,6 +246,7 @@ exports.ExportPdfPages = async (req, res) => {
         message:
           "PDF pages exported successfully. Use the link to download the exported file.",
         fileId: pdfFileRecord._id,
+        fileUrl:downloadUrl
       });
     } catch (err) {
       console.error("Error exporting PDF pages:", err.stack);

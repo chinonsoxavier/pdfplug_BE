@@ -129,7 +129,7 @@ exports.deleteFile = async (req, res) => {
 exports.getFileInfo = async (req, res) => {
   try {
     const id = req.params.id;
-    const FileModel = await fileModel.findOne({_id:id});
+    const FileModel = await fileModel.findOne({ _id: id });
 
     if (FileModel === null || undefined) {
       res.status(404).json("file not found in database");

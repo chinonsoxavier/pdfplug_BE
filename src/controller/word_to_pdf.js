@@ -12,6 +12,8 @@ const fs = require("fs");
 const path = require("path");
 const fileModel = require("../models/file_model");
 const downloadDir = path.join("downloads");
+const { promisify } = require("util");
+const unlinkAsync = promisify(fs.unlink);
 const mongoose = require("mongoose");
 
 exports.Wordtopdf = async (req, res) => {
@@ -81,16 +83,19 @@ exports.Wordtopdf = async (req, res) => {
       const outputFilePath = createOutputFilePath("pdf"); // Pass the extension
       const outputStream = fs.createWriteStream(outputFilePath);
       streamAsset.readStream.pipe(outputStream);
+
       const downloadUrl = `${req.protocol}://${req.get(
         "host"
       )}/${outputFilePath}`;
 
       const newFile = await fileModel.create({
-        fileType: "word", // The original file type
+        fileType: "pdf", // The original file type
         fileUrl: downloadUrl,
         userId: clientId,
         action: "converted Word to pdf", // New action
-        fileName: req.file.originalname,
+        fileName: `${
+          req.file.originalname.split(".").slice(0, -1).join(".") + ".pdf"
+        }`,
         icon: "word_to_pdf",
         path: outputFilePath,
       });
@@ -116,6 +121,7 @@ exports.Wordtopdf = async (req, res) => {
         console.log("Exception encountered while executing operation", err);
       }
     } finally {
+      await safeUnlink(inputFilePath, req.file.originalname);
       readStream?.destroy();
     }
   });
@@ -139,3 +145,21 @@ function createOutputFilePath(ext) {
     ("0" + date.getSeconds()).slice(-2);
   return `${filePath}/${dateString}.${ext}`; // Use the passed-in extension
 }
+
+
+const safeUnlink = async (filePath, fileName = "unknown") => {
+  if (!filePath) {
+    console.warn(`No file path provided for deletion (file: ${fileName})`);
+    return;
+  }
+  try {
+    if (fs.existsSync(filePath)) {
+      await unlinkAsync(filePath);
+      console.log(`Successfully deleted file: ${filePath}`);
+    } else {
+      console.warn(`File not found for deletion: ${filePath}`);
+    }
+  } catch (err) {
+    console.error(`Failed to delete file ${filePath}:`, err.message);
+  }
+};

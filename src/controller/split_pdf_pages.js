@@ -13,9 +13,6 @@ const fileModel = require("../models/file_model");
 // Ensure directories exist
 const downloadDir = path.join("downloads");
 const uploadDir = path.join("uploads");
-if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true });
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
 // Helper function to safely delete a file with logging
 const safeUnlink = async (filePath, fileName = "unknown") => {
   if (!filePath) {
@@ -244,23 +241,22 @@ exports.SplitPDF = async (req, res) => {
 
       // Clean up
       await fsp.rm(tempDir, { recursive: true, force: true });
-      await safeUnlink(inputFilePath, req.file.originalname);
 
       // Save to database
       const downloadUrl = `${req.protocol}://${req.get("host")}/${zipFilePath}`;
-      const newFileRecord = await fileModel
-        .create({
-          fileType: "zip",
-          fileUrl: downloadUrl,
-          userId: clientId,
-          action: `split PDF into ${ranges.length} files and compressed`,
-          fileName: `${originalFilename}_split.zip`,
-          icon: "split_pdf_pages",
-        });
+      const newFileRecord = await fileModel.create({
+        fileType: "zip",
+        fileUrl: downloadUrl,
+        userId: clientId,
+        action: `split PDF into ${ranges.length} files and compressed`,
+        fileName: `pdfplug${originalFilename}_split.zip`,
+        icon: "split_pdf_pages",
+      });
       res.status(200).json({
         message:
           "PDF split and compressed successfully. Use the link to download the zip file.",
         fileId: newFileRecord._id,
+        fileUrl: downloadUrl,
       });
     } catch (err) {
       console.error("Error splitting PDF:", err.stack);
@@ -272,3 +268,4 @@ exports.SplitPDF = async (req, res) => {
     }
   });
 };
+

@@ -9,8 +9,6 @@ const fileModel = require("../models/file_model");
 // Ensure directories exist
 const downloadDir = path.join("downloads");
 const uploadDir = path.join("uploads");
-if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir);
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 // Function to generate output file path
 function createOutputFilePath(ext) {
@@ -299,12 +297,13 @@ exports.AddPageNumbers = async (req, res) => {
           fileName: `${req.file.originalname.replace(".pdf", "_numbered.pdf")}`,
           icon: "pdf_number",
         })
-        .save();
+        ;
 
       res.status(200).json({
         message:
           "PDF page numbers added successfully. Use the link to download the numbered file.",
         fileId: pdfFileRecord._id,
+        fileUrl: downloadUrl,
       });
     } catch (err) {
       console.error("Error adding page numbers to PDF:", err.stack);

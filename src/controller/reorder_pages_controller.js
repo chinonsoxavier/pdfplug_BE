@@ -8,7 +8,7 @@ const fileModel = require("../models/file_model");
 
 // Ensure directories exist
 const downloadDir = path.join("downloads");
-const uploadDir = path.join("Uploads");
+const uploadDir = path.join("uploads");
 try {
   if (!fs.existsSync(downloadDir))
     fs.mkdirSync(downloadDir, { recursive: true });
@@ -205,11 +205,9 @@ exports.reorderPdf = async (req, res) => {
         message: `PDF pages reordered successfully to [${pageOrder.join(
           ", "
         )}]. Use the link to download.`,
-        file: {
           fileId: pdfFileRecord._id,
           downloadUrl: downloadUrl,
           fileName: `reordered_${originalFileName}`,
-        },
       });
     } catch (err) {
       console.error("Error reordering PDF:", err);

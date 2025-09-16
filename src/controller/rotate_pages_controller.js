@@ -191,15 +191,12 @@ exports.RotatePdf = async (req, res) => {
           icon: "rotate_pdf",
         });
       // Clean up input file
-      await safeUnlink(inputFilePath, originalFileName);
       console.log(pdfFileRecord._id, "file id");
       res.status(200).json({
         message: `PDF pages rotated successfully by ${angle} degrees. Use the link to download.`,
-        file: {
-          fileId: pdfFileRecord._id,
+          fileId: pdfFileRecord?._id,
           downloadUrl: downloadUrl,
           fileName: `rotated_${originalFileName}`,
-        },
       });
     } catch (err) {
       console.error("Error rotating PDF:", err);

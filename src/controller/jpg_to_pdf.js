@@ -9,8 +9,6 @@ const fileModel = require("../models/file_model");
 // Ensure directories exist
 const downloadDir = path.join("downloads");
 const uploadDir = path.join("uploads");
-if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir);
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 // Function to generate output file path
 function createOutputFilePath(ext) {
@@ -188,7 +186,8 @@ exports.JpgToPdf = async (req, res) => {
       res.status(200).json({
         message:
           "File converted successfully. Use the link to download the PDF file.",
-          fileId: pdfFileRecord._id,
+        fileId: pdfFileRecord._id,
+          downloadUrl:downloadUrl
       });
     } catch (err) {
       console.error("Error converting JPG to PDF:", err);

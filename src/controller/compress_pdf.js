@@ -14,6 +14,8 @@ const fs = require("fs");
 const path = require("path");
 const fileModel = require("../models/file_model");
 const downloadDir = path.join("downloads");
+const { promisify } = require("util");
+const unlinkAsync = promisify(fs.unlink);
 if (!fs.existsSync(downloadDir)) {
   fs.mkdirSync(downloadDir);
 }
@@ -112,15 +114,14 @@ exports.compressPdf = async (req, res) => {
           "host"
         )}/${outputFilePath}`;
 
-        const newFile = await fileModel
-          .create({
-            fileType: "application/pdf",
-            fileUrl: downloadUrl,
-            userId: clientId,
-            action: `compressed Pdf (${compressionLevel.toLowerCase()})`,
-            fileName: `compressed_${file.originalname}`,
-            icon: "compress_pdf",
-          });
+        const newFile = await fileModel.create({
+          fileType: "application/pdf",
+          fileUrl: downloadUrl,
+          userId: clientId,
+          action: `compressed Pdf (${compressionLevel.toLowerCase()})`,
+          fileName: `compressed_${file.originalname}`,
+          icon: "compress_pdf",
+        });
         successfullyCompressed.push({
           fileId: newFile._id,
           fileName: newFile.fileName,
@@ -133,7 +134,9 @@ exports.compressPdf = async (req, res) => {
           error: "Compression failed.",
         });
       } finally {
-        readStream?.destroy();
+        req.files.map(async (file, index) => {
+          await safeUnlink(file.path, file.originalname);
+        });
       }
     }
 
@@ -141,8 +144,10 @@ exports.compressPdf = async (req, res) => {
     if (successfullyCompressed.length > 0) {
       res.status(200).json({
         message: `${successfullyCompressed.length} file(s) compressed successfully.`,
-        successfullyCompressed,
+        fileUrl: successfullyCompressed[0].fileUrl,
+       fileId:successfullyCompressed[0].fileId,
         failedCompressions,
+
       });
     } else {
       res.status(400).json({
@@ -182,3 +187,20 @@ function createOutputFilePath(ext) {
     ("0" + date.getSeconds()).slice(-2);
   return `${filePath}/${dateString}.${ext}`;
 }
+
+const safeUnlink = async (filePath, fileName = "unknown") => {
+  if (!filePath) {
+    console.warn(`No file path provided for deletion (file: ${fileName})`);
+    return;
+  }
+  try {
+    if (fs.existsSync(filePath)) {
+      await unlinkAsync(filePath);
+      console.log(`Successfully deleted file: ${filePath}`);
+    } else {
+      console.warn(`File not found for deletion: ${filePath}`);
+    }
+  } catch (err) {
+    console.error(`Failed to delete file ${filePath}:`, err.message);
+  }
+};

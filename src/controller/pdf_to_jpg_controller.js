@@ -178,7 +178,8 @@ exports.PdfToJpg = async (req, res) => {
       res.status(200).json({
         message:
           "File converted successfully. Use the link to download the zip file.",
-          fileId: zipFileRecord._id,
+        fileId: zipFileRecord?._id,
+        fileUrl:zipDownloadUrl,
       });
     } catch (err) {
       console.error("Error:", err);
@@ -265,3 +266,21 @@ function createOutputJpgPaths(qualitySetting) {
     getOutputFilePathForIndex: (index) => `${outputDir}/page_${index + 1}.jpg`,
   };
 }
+
+const safeUnlink = async (filePath, fileName = "unknown") => {
+  if (!filePath) {
+    console.warn(`No file path provided for deletion (file: ${fileName})`);
+    return;
+  }
+  try {
+    if (fs.existsSync(filePath)) {
+      await unlinkAsync(filePath);
+      console.log(`Successfully deleted file: ${filePath}`);
+    } else {
+      console.warn(`File not found for deletion: ${filePath}`);
+    }
+  } catch (err) {
+    console.error(`Failed to delete file ${filePath}:`, err.message);
+  }
+};
+

@@ -23,7 +23,7 @@ app.use(
 );
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.header("Access-Control-Allow-Origin", "https://pdfplug.com");
   // Replace with your frontend's origin
   res.header("Access-Control-Allow-Credentials", true);
   res.header(

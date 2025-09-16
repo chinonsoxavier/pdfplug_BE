@@ -9,8 +9,6 @@ const fileModel = require("../models/file_model");
 // Ensure directories exist
 const downloadDir = path.join("downloads");
 const uploadDir = path.join("uploads");
-if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir);
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 // Function to generate output file path
 function createOutputFilePath(ext) {
