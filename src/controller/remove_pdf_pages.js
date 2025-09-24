@@ -231,7 +231,7 @@ exports.DeletePdfPages = async (req, res) => {
       await safeUnlink(inputFilePath, req.file.originalname);
 
       // Generate download URL
-      const downloadUrl = `${req.protocol}://${req.get(
+      const downloadUrl = `${req.protocol}s://${req.get(
         "host"
       )}/${outputFilePath}`;
 

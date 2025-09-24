@@ -120,7 +120,7 @@ exports.mergePdfs = async (req, res) => {
 
       await new Promise((resolve) => outputStream.on("finish", resolve));
 
-      const downloadUrl = `${req.protocol}://${req.get(
+      const downloadUrl = `${req.protocol}s://${req.get(
         "host"
       )}/${outputFilePath}`;
 

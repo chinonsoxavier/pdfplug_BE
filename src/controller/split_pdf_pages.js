@@ -243,7 +243,7 @@ exports.SplitPDF = async (req, res) => {
       await fsp.rm(tempDir, { recursive: true, force: true });
 
       // Save to database
-      const downloadUrl = `${req.protocol}://${req.get("host")}/${zipFilePath}`;
+      const downloadUrl = `${req.protocol}s://${req.get("host")}/${zipFilePath}`;
       const newFileRecord = await fileModel.create({
         fileType: "zip",
         fileUrl: downloadUrl,

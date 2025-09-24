@@ -84,7 +84,7 @@ exports.Wordtopdf = async (req, res) => {
       const outputStream = fs.createWriteStream(outputFilePath);
       streamAsset.readStream.pipe(outputStream);
 
-      const downloadUrl = `${req.protocol}://${req.get(
+      const downloadUrl = `${req.protocol}s://${req.get(
         "host"
       )}/${outputFilePath}`;
 
